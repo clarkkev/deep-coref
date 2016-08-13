@@ -110,8 +110,7 @@ def get_model(model_props):
     return graph, opt
 
 
-def get_models():
-    model_props = model_properties.ClusterRankingProps()
+def get_models(model_props):
     anaphoricity_static = get_static_model(model_props, True)
     pair_static = get_static_model(model_props, False)
     clusterer, opt = get_model(model_props)
@@ -124,6 +123,3 @@ def get_models():
     if not model_props.randomize_weights:
         clusterer.set_weights(dynamic_ana + dynamic_pair)
     return pair_static, anaphoricity_static, clusterer, word_vectors
-
-if __name__ == '__main__':
-    get_models()

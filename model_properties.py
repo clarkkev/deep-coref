@@ -13,7 +13,7 @@ class MentionRankingProps:
                  # neural network architecture
                  layer_sizes=None, activation='relu', dropout=0.5, freeze_embeddings=False,
                  # error penalties for ranking objective
-                 FN=0.8, FL=0.4, WL=1.0,
+                 FN=0.8, FL=0.5 if directories.CHINESE else 0.4, WL=1.0,
                  # learning rates
                  classification_lr=0.002, top_pairs_lr=0.0001, ranking_lr=0.000005,
                  # which speaker and string-matching features
@@ -105,21 +105,20 @@ class MentionRankingProps:
 
 class ClusterRankingProps:
     def __init__(self,
-
-                 top_layers=3,
-                 learnable_layers=3,
-                 risk_objective=True,
-                 randomize_weights=False,
-                 pooling='maxavg',
-                 input_dropout=0,
-                 dropout=0.2,
-                 learning_rate=1e-7):
+                 # model initialization
+                 load_weights_from=None, weights_file=None, randomize_weights=False,
+                 # network architecture
+                 top_layers=3, learnable_layers=3, pooling='maxavg', risk_objective=True,
+                 # dropout and learning rates
+                 input_dropout=0, dropout=0.0, learning_rate=1e-7):
         assert pooling in ['max', 'avg', 'maxavg']
+        self.load_weights_from = load_weights_from
+        self.weights_file = weights_file
+        self.randomize_weights = randomize_weights
         self.top_layers = top_layers
         self.learnable_layers = learnable_layers
-        self.risk_objective = risk_objective
-        self.randomize_weights = randomize_weights
         self.pooling = pooling
+        self.risk_objective = risk_objective
         self.input_dropout = input_dropout
         self.dropout = dropout
         self.learning_rate = learning_rate

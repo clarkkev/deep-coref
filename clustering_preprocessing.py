@@ -6,8 +6,8 @@ import numpy as np
 from collections import defaultdict
 
 BATCH_SIZE = 8192
-SCORE_THRESHOLD = -1 if "english" in directories.DATA else -0.5
-MARGIN_THRESHOLD = -2 if "english" in directories.DATA else -1
+SCORE_THRESHOLD = -0.5 if directories.CHINESE else -2
+MARGIN_THRESHOLD = -1 if directories.CHINESE else -1.5
 
 
 class ActionSpace:
@@ -127,6 +127,8 @@ def write_probable_pairs(dataset_name, action_space_path, scores):
 
 
 def write_action_spaces(dataset_name, action_space_path, model_path, ltr=False):
+    output_file = action_space_path + dataset_name + "_action_space.pkl"
+    print "Writing candidate actions to " + output_file
     scores = util.load_pickle(model_path + dataset_name + "_scores.pkl")
     write_probable_pairs(dataset_name, action_space_path, scores)
     probable_pairs = util.load_pickle(action_space_path + dataset_name + '_probable_pairs.pkl')
@@ -150,12 +152,12 @@ def write_action_spaces(dataset_name, action_space_path, model_path, ltr=False):
             possible_pairs = get_possible_pairs(probable_pairs[did])
             possible_pairs_total += len(possible_pairs)
             action_spaces.append(ActionSpace(did, actions, possible_pairs))
-    util.write_pickle(action_spaces, action_space_path + dataset_name + "_action_space.pkl")
+    util.write_pickle(action_spaces, output_file)
 
 
 def main(ranking_model):
     write_action_spaces("dev", directories.ACTION_SPACE,
-                        directories.MODELS_BASE + ranking_model)
+                        directories.MODELS_BASE + ranking_model + "/")
     write_action_spaces("test", directories.ACTION_SPACE,
-                        directories.MODELS_BASE + ranking_model.INITIALIZER)
+                        directories.MODELS_BASE + ranking_model + "/")
 

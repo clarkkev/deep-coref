@@ -249,16 +249,15 @@ def load_docs(dataset_name, word_vectors):
 
 
 class Trainer:
-    def __init__(self, train_set='train', test_set='dev', n_epochs=200, empty_buffer=True,
-                 betas=None, write_every=1, max_docs=10000):
+    def __init__(self, model_props, train_set='train', test_set='dev', n_epochs=200,
+                 empty_buffer=True, betas=None, write_every=1, max_docs=10000):
         if betas is None:
             betas = [0]
         self.write_every = write_every
 
         print "Model=" + directories.CLUSTERER + ", ordering from " + directories.ACTION_SPACE
         self.pair_model, self.anaphoricity_model, self.model, word_vectors = \
-            clustering_models.get_models()
-        self.model.load_weights(directories.CLUSTERER_BASE + 'final_long/5_weights.hdf5')
+            clustering_models.get_models(model_props)
         json_string = self.model.to_json()
         open(directories.CLUSTERER + 'architecture.json', 'w').write(json_string)
         util.rmkdir(directories.CLUSTERER + 'src')
@@ -346,8 +345,5 @@ def write_pairs(pairs, name):
             f.write("\n")
 
 
-def main():
-    Trainer()
-
-if __name__ == '__main__':
-    main()
+def main(model_props):
+    Trainer(model_props)
