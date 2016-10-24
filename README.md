@@ -1,7 +1,7 @@
 # Coreference Resolution with Deep Learning
 
 This repository contains code for training and running the neural coreference models decribed in two papers:
-* [Coming Soon] ["Deep Reinforcement Learning for Mention-Ranking Coreference Models"](http://cs.stanford.edu/people/kevclark/resources/clark-manning-emnlp2016-deep.pdf), Kevin Clark and Christopher D. Manning, EMNLP 2016.
+* ["Deep Reinforcement Learning for Mention-Ranking Coreference Models"](http://cs.stanford.edu/people/kevclark/resources/clark-manning-emnlp2016-deep.pdf), Kevin Clark and Christopher D. Manning, EMNLP 2016.
 * ["Improving Coreference Resolution by Learning Entity-Level Distributed Representations"](http://cs.stanford.edu/people/kevclark/resources/clark-manning-acl16-improving.pdf), Kevin Clark and Christopher D. Manning, ACL 2016.
 
 ### Requirements
@@ -13,9 +13,14 @@ The easiest way of doing this is within Stanford's [CoreNLP](https://github.com/
 ```
 java -Xmx5g -cp stanford-corenlp.jar edu.stanford.nlp.pipeline.StanfordCoreNLP -annotators tokenize,ssplit,pos,lemma,ner,parse,mention,coref -coref.algorithm neural -file example_file.txt
 ```
-You will need to fork the latest version from github and download the latest models from [here](http://nlp.stanford.edu/software/stanford-english-corenlp-models-current.jar).
+See the [CorefAnnotator](http://stanfordnlp.github.io/CoreNLP/coref.html) page for more details.
+
 
 #### Training your own model
-1. Download pretrained word embeddings. We use 50 dimensional word2vec embeddings for English ([link](https://drive.google.com/open?id=0B5Y5rz_RUKRmdEFPcGIwZ2xLRW8)) and 64 dimenensional [polyglot](https://sites.google.com/site/rmyeid/projects/polyglot) embeddings for Chinese ([link](http://bit.ly/19bTKeS)) in our paper.
-2. Run the [NeuralCorefDataExporter](https://github.com/stanfordnlp/CoreNLP/blob/master/src/edu/stanford/nlp/coref/neural/NeuralCorefDataExporter.java) class in the development version Stanford's CoreNLP using [this](https://github.com/stanfordnlp/CoreNLP/blob/master/src/edu/stanford/nlp/coref/neural/properties/english-conll.properties) properties file. This does mention detection and feature extraction on the CoNLL data and then outputs the results as json.
-3. Run run_all.py, preferably on a GPU. Training takes roughly 4 days on a GTX TITAN GPU.
+The following to trains the neural mention-ranking model with reward rescaling (the highest scoring model from the papers).
+1. Download the CoNLL training data from [here](http://conll.cemantix.org/2012/data.html).
+2. Download pretrained word embeddings. We use 50 dimensional word2vec embeddings for English ([link](https://drive.google.com/open?id=0B5Y5rz_RUKRmdEFPcGIwZ2xLRW8)) and 64 dimenensional [polyglot](https://sites.google.com/site/rmyeid/projects/polyglot) embeddings for Chinese ([link](http://bit.ly/19bTKeS)) in our paper.
+3. Run the [NeuralCorefDataExporter](https://github.com/stanfordnlp/CoreNLP/blob/master/src/edu/stanford/nlp/coref/neural/NeuralCorefDataExporter.java) class in version Stanford's CoreNLP using the [neural-coref-conll](https://github.com/stanfordnlp/CoreNLP/blob/master/src/edu/stanford/nlp/coref/properties/neural-english-conll.properties) properties file. This does mention detection and feature extraction on the CoNLL data and then outputs the results as json.
+4. Run run_all.py, preferably on a GPU. Training takes roughly 7 days on a GTX TITAN X GPU.
+
+run_all.py also contains methods to train the other models from the papers.

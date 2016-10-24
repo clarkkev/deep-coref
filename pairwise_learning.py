@@ -1,5 +1,5 @@
 import directories
-import util
+import utils
 import model_properties
 import evaluation
 from document import Document
@@ -7,7 +7,7 @@ from document import Document
 import numpy as np
 import timer
 import time
-import dataset
+import datasets
 import pairwise_models
 import shutil
 import os
@@ -16,8 +16,6 @@ from collections import defaultdict
 from pprint import pprint
 from sklearn.metrics import accuracy_score, average_precision_score, precision_score,\
                             recall_score
-
-EVAL_THRESHOLDS = [0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55]
 
 
 class RankingMetricsTracker:
@@ -62,7 +60,7 @@ class RankingMetricsTracker:
 
         return self.loss_sum / self.n_examples
 
-    def finish(self):
+    def finish(self, stats):
         loss = self.loss_sum / self.n_examples
         if not self.model_props.anaphoricity:
             printout = "{:} = loss: {:.4f} - P@1: {:}/{:} = {:.2f}%"\
@@ -76,15 +74,15 @@ class RankingMetricsTracker:
                 .format(self.name, loss, self.CN, self.CL, self.FN, self.FL, self.WL,
                         self.CL / max(1, float(self.CL + self.WL)),
                         2 * ana_prec * ana_rec / max(1e-6, ana_prec + ana_rec))
-        result = {
+        stats.update({
                 self.name + " loss": loss,
                 self.name + " CN": self.CN,
                 self.name + " CL": self.CL,
                 self.name + " FN": self.FN,
                 self.name + " FL": self.FL,
                 self.name + " WL": self.WL,
-        }
-        return printout, result
+        })
+        print printout
 
 
 class ClassificationMetricsTracker:
@@ -103,13 +101,14 @@ class ClassificationMetricsTracker:
         self.n_examples += y.size
         return self.loss_sum / self.n_examples
 
-    def finish(self):
+    def finish(self, stats):
         self.y_pred = np.array(self.y_pred, dtype='float32')
         self.y_true = np.array(self.y_true)
         auc = average_precision_score(self.y_true, self.y_pred)
         loss = self.loss_sum / self.n_examples
 
-        metrics = {thresh: self.get_metrics(thresh) for thresh in EVAL_THRESHOLDS}
+        metrics = {thresh: self.get_metrics(thresh) for thresh in
+                   [0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55]}
         best_accuracy = max(m['accuracy'] for m in metrics.values())
         best_f1_threshold = max(metrics.keys(), key=lambda t: metrics[t]['f1'])
         result = {
@@ -122,9 +121,10 @@ class ClassificationMetricsTracker:
         result.update({self.name + " best_" + k: v for k, v in
                        metrics[best_f1_threshold].iteritems()})
         result[self.name + " best_accuracy"] = best_accuracy
-        printout = "{:} - loss: {:.4f} - auc: {:.4f} - f1: {:.4f} (thresh={:.2f})".format(
+
+        stats.update(result)
+        print "{:} - loss: {:.4f} - auc: {:.4f} - f1: {:.4f} (thresh={:.2f})".format(
                 self.name, loss, auc, metrics[best_f1_threshold]['f1'], best_f1_threshold)
-        return printout, result
 
     def get_metrics(self, thresh):
         pred = np.clip(np.floor(self.y_pred / thresh), 0, 1)
@@ -138,7 +138,7 @@ class ClassificationMetricsTracker:
         }
 
 
-def update_doc(doc, X, scores, links_record=None, scores_record=None):
+def update_doc(doc, X, scores, saved_links=None, saved_scores=None):
     s = scores[1][:, 0]
     starts_ends = zip(X['starts'][:, 0], X['ends'][:, 0])
     for (start, end) in starts_ends:
@@ -146,17 +146,19 @@ def update_doc(doc, X, scores, links_record=None, scores_record=None):
         link = np.argmax(action_scores)
         m1, m2 = X['ids'][start + link]
 
-        if links_record is not None:
-            for pair, link_score in zip(X['ids'][start:end], action_scores):
-                scores_record[doc.did][tuple(pair)] = link_score
+        if saved_links is not None:
             if m1 != -1:
-                links_record[doc.did].append((m1, m2))
+                saved_links[doc.did].append((m1, m2))
+        if saved_scores is not None:
+            for pair, link_score in zip(X['ids'][start:end], action_scores):
+                saved_scores[doc.did][tuple(pair)] = link_score
+
         doc.link(m1, m2)
 
 
-def run_over_docs(dataset_name, docs, model):
+def run_model_over_docs(dataset_name, docs, model):
     docs_by_id = {doc.did: doc for doc in docs}
-    prog = util.Progbar(dataset_name.n_batches)
+    prog = utils.Progbar(dataset_name.n_batches)
     for i, X in enumerate(dataset_name):
         if X['y'].size == 0:
             continue
@@ -165,26 +167,140 @@ def run_over_docs(dataset_name, docs, model):
         prog.update(i + 1)
 
 
-def evaluate(docs, prefix):
+def compute_metrics(docs, prefix):
     results = {}
     for name, metric in [(' muc', evaluation.muc), (' b3', evaluation.b_cubed),
-                         (' ceafe', evaluation.ceafe)]:
+                         (' ceafe', evaluation.ceafe), (' lea', evaluation.lea)]:
         p, r, f1 = evaluation.evaluate_documents(docs, metric)
         results[prefix + name] = f1
         results[prefix + name + ' precision'] = p
         results[prefix + name + ' recall'] = r
-    muc, b3, ceafe = results[prefix + ' muc'], results[prefix + ' b3'], results[prefix + ' ceafe']
+    muc, b3, ceafe, lea = \
+        results[prefix + ' muc'], results[prefix + ' b3'], results[prefix + ' ceafe'], results[prefix + ' lea']
     conll = (muc + b3 + ceafe) / 3
-    print "{:} - MUC: {:0.2f} - B3: {:0.2f} - CEAFE: {:0.2f} - CoNLL {:0.2f}".format(
-        prefix, 100 * muc, 100 * b3, 100 * ceafe, 100 * conll)
+    print "{:} - MUC: {:0.2f} - B3: {:0.2f} - CEAFE: {:0.2f} - LEA {:0.2f} - CoNLL {:0.2f}".format(
+        prefix, 100 * muc, 100 * b3, 100 * ceafe, 100 * lea, 100 * conll)
     results[prefix + ' conll'] = conll
     return results
 
 
-def main(n_epochs=10000, test_only=False, write_scores=False, reduced=False,
-         model_props=None, validate='dev'):
+def set_costs(dataset, docs):
+    docs_by_id = {doc.did: doc for doc in docs}
+    prog = utils.Progbar(dataset.n_batches)
+    for i, X in enumerate(dataset):
+        if X['y'].size == 0:
+            continue
+        doc = docs_by_id[X['did']]
+        doc_weight = (len(doc.mention_to_gold) + len(doc.mentions)) / 10.0
+        for (start, end) in zip(X['starts'][:, 0], X['ends'][:, 0]):
+            ids = X['ids'][start:end]
+            ana = ids[0, 1]
+            old_ant = doc.ana_to_ant[ana]
+            doc.unlink(ana)
+            costs = X['cost_ptrs'][start:end]
+            for ant_ind in range(end - start):
+                costs[ant_ind] = doc.link(ids[ant_ind, 0], ana, hypothetical=True, beta=1)
+            doc.link(old_ant, ana)
+
+            costs -= costs.max()
+            costs *= -doc_weight
+        prog.update(i + 1)
+
+
+def test(model_props=None, model_name=None, weights_file='best_weights', dataset_name='test',
+         save_output=True, save_scores=False):
+    if model_props is None:
+        model_props = model_properties.MentionRankingProps(load_weights_from=model_name,
+                                                           weights_file=weights_file)
+
+    print "Loading data"
+    vectors = np.load(directories.RELEVANT_VECTORS + 'word_vectors.npy')
+    dataset = datasets.DocumentBatchedDataset(dataset_name + "_reduced", model_props, with_ids=True)
+    docs = utils.load_pickle(directories.DOCUMENTS + dataset_name + '_docs.pkl')
+    stats = {}
+
+    print "Building model"
+    model, _ = pairwise_models.get_model(dataset, vectors, model_props)
+
+    print "Evaluating model"
+    evaluate_model(dataset, docs, model, model_props, stats,
+                   save_output=save_output, save_scores=save_scores)
+    timer.clear()
+    utils.write_pickle(stats, model_props.path + dataset_name + "_results.pkl")
+
+
+def evaluate_model(dataset, docs, model, model_props, stats, save_output=False, save_scores=False,
+                   print_table=False):
+    prog = utils.Progbar(dataset.n_batches)
+    mt = RankingMetricsTracker("dev", model_props=model_props) \
+        if model_props.ranking else ClassificationMetricsTracker("dev")
+    mta = ClassificationMetricsTracker("dev anaphoricity", anaphoricity=True)
+
+    docs_by_id = {doc.did: doc for doc in docs} if model_props.ranking else {}
+    saved_links, saved_scores = (defaultdict(list) if save_output else None,
+                                 defaultdict(dict) if save_scores else None)
+    for i, X in enumerate(dataset):
+        if X['y'].size == 0:
+            continue
+        progress = []
+        scores = model.predict_on_batch(X)
+        if model_props.ranking:
+            update_doc(docs_by_id[X['did']], X, scores,
+                       saved_links=saved_links, saved_scores=saved_scores)
+        if model_props.anaphoricity and not model_props.ranking:
+            progress.append(("anaphoricity loss", mta.update(X, scores[0][:, 0])))
+        if not model_props.anaphoricity_only:
+            progress.append(("loss", mt.update(
+                X, scores if model_props.ranking else
+                scores[1 if model_props.anaphoricity else 0][:, 0])))
+        prog.update(i + 1, exact=progress)
+
+    if save_scores:
+        print "Writing scores"
+        utils.write_pickle(saved_scores, model_props.path + dataset.name + '_scores.pkl')
+    if save_output:
+        print "Writing output"
+        utils.write_pickle(saved_links, model_props.path + dataset.name + '_links.pkl')
+        utils.write_pickle(docs, model_props.path + dataset.name + '_processed_docs.pkl')
+
+    timer.start("metrics")
+    if model_props.ranking:
+        stats.update(compute_metrics(docs, "dev"))
+    stats["validate time"] = time.time() - prog.start
+    if model_props.anaphoricity and not model_props.ranking:
+        mta.finish(stats)
+    if not model_props.anaphoricity_only:
+        mt.finish(stats)
+
+    timer.stop("metrics")
+
+    if print_table:
+        print " & ".join(map(lambda x: "{:.2f}".format(x * 100), [
+            stats["dev muc precision"],
+            stats["dev muc recall"],
+            stats["dev muc"],
+            stats["dev b3 precision"],
+            stats["dev b3 recall"],
+            stats["dev b3"],
+            stats["dev ceafe precision"],
+            stats["dev ceafe recall"],
+            stats["dev ceafe"],
+            stats["dev conll"],
+        ]))
+
+
+def train(model_props=None, n_epochs=10000, reduced=False, dev_set_name='dev'):
     if model_props is None:
         model_props = model_properties.MentionRankingProps()
+
+    print "Training", model_props.path
+    pprint(model_props.__dict__)
+
+    model_props.write(model_props.path + 'model_props.pkl')
+    utils.rmkdir(model_props.path + 'src')
+    for fname in os.listdir('.'):
+        if fname.endswith('.py'):
+            shutil.copyfile(fname, model_props.path + 'src/' + fname)
     if model_props.ranking or \
             model_props.top_pairs:
         write_start = 0
@@ -193,155 +309,89 @@ def main(n_epochs=10000, test_only=False, write_scores=False, reduced=False,
         write_start = 80
         write_every = 20
 
-    print "Training", directories.MODEL
-    pprint(model_props.__dict__)
-
-    if not test_only:
-        model_props.write(directories.MODEL + 'model_props.pkl')
-        util.rmkdir(directories.MODEL + 'src')
-        for fname in os.listdir('.'):
-            if fname.endswith('.py'):
-                shutil.copyfile(fname, directories.MODEL + 'src/' + fname)
-
     print "Loading data"
     vectors = np.load(directories.RELEVANT_VECTORS + 'word_vectors.npy')
-    if not test_only:
-        train = dataset.DocumentBatchedDataset("train_reduced" if reduced else "train", model_props,
-                                   max_pairs=10000, with_ids=True)
-    tune = dataset.DocumentBatchedDataset(validate + "_reduced" if reduced else validate, model_props,
-                              with_ids=True)
+    train = datasets.DocumentBatchedDataset("train_reduced" if reduced else "train",
+                                            model_props, with_ids=True)
+    dev = datasets.DocumentBatchedDataset(dev_set_name + "_reduced" if reduced else dev_set_name,
+                                          model_props, with_ids=True)
 
     print "Building model"
-    model, opt = pairwise_models.get_model(tune, vectors, model_props)
+    model, _ = pairwise_models.get_model(dev, vectors, model_props)
     json_string = model.to_json()
-    open(directories.MODEL + 'architecture.json', 'w').write(json_string)
+    open(model_props.path + 'architecture.json', 'w').write(json_string)
 
-    print "Training"
-    print
     best_val_score = 1000
     best_val_score_in_window = 1000
     history = []
     for epoch in range(n_epochs):
         timer.start("train")
-        print "EPOCH {:}, model = {:}".format((epoch + 1), directories.MODEL)
-        if model_props.ranking:
-            if not test_only:
-                train_docs = util.load_pickle(directories.DOCUMENTS + 'train_docs.pkl')
-            dev_docs = util.load_pickle(directories.DOCUMENTS + validate + '_docs.pkl')
-            if reduced:
-                dev_docs = dev_docs[:3]
+        print "EPOCH {:}, model = {:}".format((epoch + 1), model_props.path)
 
         epoch_stats = {}
-        if not test_only:
-            model_weights = model.get_weights()
-            if model_props.ranking:
-                print "Running over train"
-                run_over_docs(train, train_docs, model)
-                epoch_stats.update(evaluate(train_docs, "train"))
+        model_weights = model.get_weights()
+        train_docs = utils.load_pickle(directories.DOCUMENTS + 'train_docs.pkl')
+        dev_docs = utils.load_pickle(directories.DOCUMENTS + dev_set_name + '_docs.pkl')
+        if reduced:
+            dev_docs = dev_docs[:3]
 
-            print "Training"
-            prog = util.Progbar(train.n_batches)
-            train.shuffle()
-            loss_sum, n_examples = 0, 0
-            for i, X in enumerate(train):
-                if X['y'].size == 0:
-                    continue
-                batch_loss = model.train_on_batch(X)
-                loss_sum += batch_loss * train.scale_factor
-                n_examples += X['y'].size
-                prog.update(i + 1, exact=[("train loss", loss_sum / n_examples)])
-            epoch_stats["train time"] = time.time() - prog.start
-            for k in prog.unique_values:
-                epoch_stats[k] = prog.sum_values[k][0] / max(1, prog.sum_values[k][1])
+        if model_props.ranking:
+            print "Running over training set"
+            run_model_over_docs(train, train_docs, model)
+            epoch_stats.update(compute_metrics(train_docs, "train"))
+            if model_props.use_rewards:
+                print "Setting costs"
+                set_costs(train, train_docs)
 
-            epoch_stats["weight diffs"] = [
-                (np.sum(np.abs(new_weight - old_weight)), new_weight.size)
-                for new_weight, old_weight in zip(model.get_weights(), model_weights)]
-            summed = np.sum(map(np.array, epoch_stats["weight diffs"][1:]), axis=0)
-            epoch_stats["total weight diff"] = tuple(summed)
-
-        print "Testing"
-        prog = util.Progbar(tune.n_batches)
-        mt = RankingMetricsTracker("dev", model_props=model_props) \
-            if model_props.ranking else ClassificationMetricsTracker("dev")
-        mta = ClassificationMetricsTracker("dev anaphoricity", anaphoricity=True)
-
-        docs_by_id = {doc.did: doc for doc in dev_docs} if model_props.ranking else {}
-        links_record, scores_record = (defaultdict(list), defaultdict(dict)) \
-            if write_scores else (None, None)
-        for i, X in enumerate(tune):
+        print "Training"
+        prog = utils.Progbar(train.n_batches)
+        train.shuffle()
+        loss_sum, n_examples = 0, 0
+        for i, X in enumerate(train):
             if X['y'].size == 0:
                 continue
-            progress = []
-            scores = model.predict_on_batch(X)
-            if model_props.ranking:
-                update_doc(docs_by_id[X['did']], X, scores,
-                           links_record=links_record, scores_record=scores_record)
-            if model_props.anaphoricity and not model_props.ranking:
-                progress.append(("anaphoricity loss", mta.update(X, scores[0][:, 0])))
-            if not model_props.anaphoricity_only:
-                progress.append(("loss", mt.update(
-                    X, scores if model_props.ranking else
-                    scores[1 if model_props.anaphoricity else 0][:, 0])))
-            prog.update(i + 1, exact=progress)
+            batch_loss = model.train_on_batch(X)
+            loss_sum += batch_loss * train.scale_factor
+            n_examples += X['y'].size
+            prog.update(i + 1, exact=[("train loss", loss_sum / n_examples)])
+        epoch_stats["train time"] = time.time() - prog.start
+        for k in prog.unique_values:
+            epoch_stats[k] = prog.sum_values[k][0] / max(1, prog.sum_values[k][1])
 
-        if write_scores:
-            print "Writing scores"
-            util.write_pickle(links_record, directories.MODEL + validate + '_links.pkl')
-            util.write_pickle(scores_record, directories.MODEL + validate + '_scores.pkl')
+        epoch_stats["weight diffs"] = [
+            (np.sum(np.abs(new_weight - old_weight)), new_weight.size)
+            for new_weight, old_weight in zip(model.get_weights(), model_weights)]
+        summed = np.sum(map(np.array, epoch_stats["weight diffs"][1:]), axis=0)
+        epoch_stats["total weight diff"] = tuple(summed)
 
-        timer.start("metrics")
-        if model_props.ranking:
-            epoch_stats.update(evaluate(dev_docs, "dev"))
-        epoch_stats["validate time"] = time.time() - prog.start
-        if model_props.anaphoricity and not model_props.ranking:
-            printout, result_a = mta.finish()
-            epoch_stats.update(result_a)
-            print printout
-        if not model_props.anaphoricity_only:
-            printout, result = mt.finish()
-            epoch_stats.update(result)
-            print printout
-        timer.stop("metrics")
+        print "Testing on dev set"
+        evaluate_model(dev, dev_docs, model, model_props, epoch_stats)
 
-        if test_only:
-            print " & ".join(map(lambda x: "{:.2f}".format(x * 100), [
-                epoch_stats["dev muc precision"],
-                epoch_stats["dev muc recall"],
-                epoch_stats["dev muc"],
-                epoch_stats["dev b3 precision"],
-                epoch_stats["dev b3 recall"],
-                epoch_stats["dev b3"],
-                epoch_stats["dev ceafe precision"],
-                epoch_stats["dev ceafe recall"],
-                epoch_stats["dev ceafe"],
-                epoch_stats["dev conll"],
-            ]))
-            return
         history.append(epoch_stats)
-        util.write_pickle(history, directories.MODEL + 'history.pkl')
+        utils.write_pickle(history, model_props.path + 'history.pkl')
         score = -epoch_stats["dev conll"] if model_props.ranking else \
-            (result["dev loss"] if not model_props.anaphoricity_only else
-             result_a["dev anaphoricity loss"])
+            (epoch_stats["dev loss"] if not model_props.anaphoricity_only else
+             epoch_stats["dev anaphoricity loss"])
         if score < best_val_score:
             best_val_score = score
             print "New best {:}, saving model".format(
-                "F1" if model_props.ranking else "validation loss")
-            model.save_weights(directories.MODEL + "best_weights.hdf5", overwrite=True)
+                "CoNLL F1" if model_props.ranking else "validation loss")
+            model.save_weights(model_props.path + "best_weights.hdf5", overwrite=True)
         if score < best_val_score_in_window and epoch > write_start:
             print "Best in last {:}, saved to weights_{:}".format(
                 write_every, write_every * (epoch / write_every))
             best_val_score_in_window = score
-            model.save_weights(directories.MODEL + "weights_{:}.hdf5".format(
+            model.save_weights(model_props.path + "weights_{:}.hdf5".format(
                 write_every * (epoch / write_every)), overwrite=True)
         if epoch % write_every == 0:
             best_val_score_in_window = 1000
 
         timer.stop("train")
         timer.print_totals()
-
         print
+
+    timer.clear()
 
 
 if __name__ == '__main__':
-    main(test_only=True, validate='test', reduced=False, write_scores=True)
+    test(model_name='reward_rescaling', dataset_name='test', save_output=True, save_scores=False)

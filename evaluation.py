@@ -38,7 +38,7 @@ class Evaluator:
     def get_precision(self):
         return 0 if self.p_num == 0 else self.p_num / float(self.p_den)
 
-    def prf(self):
+    def get_prf(self):
         return self.get_precision(), self.get_recall(), self.get_f1()
 
     def get_counts(self):
@@ -102,3 +102,24 @@ def ceafe(clusters, gold_clusters):
     matching = linear_assignment(-scores)
     similarity = sum(scores[matching[:, 0], matching[:, 1]])
     return similarity, len(clusters), similarity, len(gold_clusters)
+
+
+def lea(clusters, mention_to_gold):
+    num, dem = 0, 0
+
+    for c in clusters:
+        if len(c) == 1:
+            continue
+
+        common_links = 0
+        all_links = len(c) * (len(c) - 1) / 2.0
+        for i, m in enumerate(c):
+            if m in mention_to_gold:
+                for m2 in c[i + 1:]:
+                    if m2 in mention_to_gold and mention_to_gold[m] == mention_to_gold[m2]:
+                        common_links += 1
+
+        num += len(c) * common_links / float(all_links)
+        dem += len(c)
+
+    return num, dem

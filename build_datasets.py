@@ -1,6 +1,6 @@
 import directories
-import util
-from dataset import PairDataBuilder, MentionDataBuilder, DocumentDataBuilder
+import utils
+from datasets import PairDataBuilder, MentionDataBuilder, DocumentDataBuilder
 from word_vectors import WordVectors
 import random
 import numpy as np
@@ -9,7 +9,7 @@ import numpy as np
 def explore_pairwise_features():
     pos_sum, neg_sum = np.zeros(9), np.zeros(9)
     pos_count, neg_count = 0, 0
-    for i, d in enumerate(util.load_json_lines(directories.RAW + "train")):
+    for i, d in enumerate(utils.load_json_lines(directories.RAW + "train")):
         for key in d["labels"].keys():
             if d["labels"][key] == 1:
                 pos_sum += d["pair_features"][key]
@@ -25,7 +25,7 @@ def explore_pairwise_features():
 
 
 def build_dataset(vectors, name, tune_fraction=0.0, reduced=False, columns=None):
-    doc_vectors = util.load_pickle(directories.MISC + name.replace("_reduced", "") +
+    doc_vectors = utils.load_pickle(directories.MISC + name.replace("_reduced", "") +
                                    "_document_vectors.pkl")
 
     main_pairs = PairDataBuilder(columns)
@@ -35,9 +35,9 @@ def build_dataset(vectors, name, tune_fraction=0.0, reduced=False, columns=None)
     main_docs = DocumentDataBuilder(columns)
     tune_docs = DocumentDataBuilder(columns)
 
-    print "Building dataset", name
-    p = util.Progbar(target=(2 if reduced else util.lines_in_file(directories.RAW + name)))
-    for i, d in enumerate(util.load_json_lines(directories.RAW + name)):
+    print "Building dataset", name + ("/tune" if tune_fraction > 0 else "")
+    p = utils.Progbar(target=(2 if reduced else utils.lines_in_file(directories.RAW + name)))
+    for i, d in enumerate(utils.load_json_lines(directories.RAW + name)):
         if reduced and i > 2:
             break
         p.update(i + 1)

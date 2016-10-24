@@ -1,10 +1,10 @@
-import util
+import utils
 
-DATA = './data/'
+DATA = '/scr/kevclark/clean_english_conll/'#'./data/'
 
 RAW = DATA + 'raw/'
-MODELS_BASE = DATA + 'models/'
-CLUSTERER_BASE = DATA + 'clusterers/'
+MODELS = DATA + 'models/'
+CLUSTERERS = DATA + 'clusterers/'
 DOCUMENTS = DATA + 'documents/'
 ACTION_SPACES_BASE = DATA + 'action_spaces/'
 GOLD = DATA + 'gold/'
@@ -19,36 +19,19 @@ RELEVANT_VECTORS = MENTION_DATA
 PAIR_DATA = FEATURES_BASE + 'mention_pair_data/'
 DOC_DATA = FEATURES_BASE + 'doc_data/'
 
-MODEL_NAME = 'model/'
-MODEL = MODELS_BASE + MODEL_NAME
-
-CLUSTERER_NAME = 'clusterer/'
-CLUSTERER = CLUSTERER_BASE + CLUSTERER_NAME
-
 ACTION_SPACE_NAME = 'action_spaces/'
 ACTION_SPACE = ACTION_SPACES_BASE + ACTION_SPACE_NAME
 
 assert DATA[-1] == '/'
 assert ACTION_SPACE_NAME[-1] == '/'
-assert MODEL_NAME[-1] == '/'
-assert CLUSTERER[-1] == '/'
 
-util.mkdir(MISC)
-util.mkdir(FEATURES_BASE)
-util.mkdir(MENTION_DATA)
-util.mkdir(PAIR_DATA)
-util.mkdir(DOC_DATA)
-util.mkdir(MODELS_BASE)
-util.mkdir(CLUSTERER_BASE)
-util.mkdir(MODEL)
-util.mkdir(CLUSTERER)
-util.mkdir(DOCUMENTS)
-util.mkdir(ACTION_SPACES_BASE)
-util.mkdir(ACTION_SPACE)
-
-
-def set_model_name(model_name):
-    global MODEL_NAME, MODEL
-    MODEL_NAME = model_name + '/'
-    MODEL = MODELS_BASE + MODEL_NAME
-    util.mkdir(MODEL)
+utils.mkdir(MISC)
+utils.mkdir(FEATURES_BASE)
+utils.mkdir(MENTION_DATA)
+utils.mkdir(PAIR_DATA)
+utils.mkdir(DOC_DATA)
+utils.mkdir(MODELS)
+utils.mkdir(CLUSTERERS)
+utils.mkdir(DOCUMENTS)
+utils.mkdir(ACTION_SPACES_BASE)
+utils.mkdir(ACTION_SPACE)

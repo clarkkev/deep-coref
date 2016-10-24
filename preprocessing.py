@@ -1,4 +1,4 @@
-import util
+import utils
 import directories
 import word_vectors
 import numpy as np
@@ -6,8 +6,8 @@ from collections import Counter
 
 
 def docs(dataset_name):
-    p = util.Progbar(target=(util.lines_in_file(directories.RAW + dataset_name)))
-    for i, d in enumerate(util.load_json_lines(directories.RAW + dataset_name)):
+    p = utils.Progbar(target=(utils.lines_in_file(directories.RAW + dataset_name)))
+    for i, d in enumerate(utils.load_json_lines(directories.RAW + dataset_name)):
         p.update(i + 1)
         yield d
 
@@ -22,7 +22,7 @@ def write_words():
                 for w in mention["sentence"]:
                     words[word_vectors.normalize(w)] += inc
                 words[word_vectors.normalize(mention["dep_relation"])] += 1
-    util.write_pickle(words, directories.MISC + 'word_counts.pkl')
+    utils.write_pickle(words, directories.MISC + 'word_counts.pkl')
 
 
 def write_document_vectors():
@@ -46,7 +46,7 @@ def write_document_vectors():
                     v += vectors.vectors[vectors[w]]
                     n += 1
             doc_vectors[did] = v / n
-        util.write_pickle(doc_vectors, directories.MISC + dataset_name + "_document_vectors.pkl")
+        utils.write_pickle(doc_vectors, directories.MISC + dataset_name + "_document_vectors.pkl")
 
 
 def write_genres():
@@ -56,13 +56,13 @@ def write_genres():
         for d in docs(dataset_name):
             sources.add(d["document_features"]["source"])
     print sources
-    util.write_pickle({source: i for i, source in enumerate(sorted(sources))},
+    utils.write_pickle({source: i for i, source in enumerate(sorted(sources))},
                       directories.MISC + 'genres.pkl')
 
 
 def write_feature_names():
-    util.write_pickle({f: i for i, f in enumerate(next(
-        util.load_json_lines(directories.RAW + 'train'))["pair_feature_names"])},
+    utils.write_pickle({f: i for i, f in enumerate(next(
+        utils.load_json_lines(directories.RAW + 'train'))["pair_feature_names"])},
                       directories.MISC + 'pair_feature_names.pkl')
 
 

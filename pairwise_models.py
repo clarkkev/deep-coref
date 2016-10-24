@@ -177,7 +177,7 @@ def build_graph(train, vectors, model_props, representation=False):
                            inputs=['top', 'reindex'], merge_mode='index')
         graph.add_node(Identity(), name='anaphor_losses',
                        inputs=['scores_reindexed', 'starts', 'ends', 'costs'],
-                       merge_mode='mm')
+                       merge_mode='risk' if model_props.reinforce else 'mm')
         graph.add_output(name='y', input='anaphor_losses')
         graph.add_output(name='z', input='scores_reindexed')
     else:
@@ -191,7 +191,7 @@ def set_weights(graph, weights_from, weights_file):
 
 
 def get_weights(model, weight_file):
-    w_file = directories.MODELS_BASE + model + '/' + weight_file + '.hdf5'
+    w_file = directories.MODELS + model + '/' + weight_file + '.hdf5'
     f = h5py.File(w_file)
     g = f['graph']
     return [g['param_{}'.format(p)] for p in range(g.attrs['nb_params'])]
@@ -204,7 +204,7 @@ def get_model(train, vectors, model_props):
     timer.start("compile")
     loss = {}
     if model_props.ranking:
-        loss['y'] = get_sum(train.scale_factor)
+        loss['y'] = get_sum(train.scale_factor * (0.1 if model_props.reinforce else 1))
     else:
         if not model_props.anaphoricity_only:
             loss['y'] = get_summed_cross_entropy(train.scale_factor)

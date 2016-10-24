@@ -1,9 +1,9 @@
-import dataset
+import datasets
 import clustering_models
 import model_properties
 import directories
 import timer
-import util
+import utils
 import evaluation
 from document import Document
 from clustering_preprocessing import ActionSpace
@@ -118,7 +118,7 @@ class ReplayMemory:
         timer.start("train")
 
         model_weights = self.model.get_weights()
-        prog = util.Progbar(len(self.memory))
+        prog = utils.Progbar(len(self.memory))
         random.shuffle(self.memory)
         for i, X in enumerate(self.memory):
             loss = self.train_on_example(X)
@@ -176,7 +176,7 @@ class AgentRunner:
         random.shuffle(docs)
         if self.training:
             docs = docs[:docs_per_iteration]
-        prog = util.Progbar(len(docs))
+        prog = utils.Progbar(len(docs))
         for i, (doc, actionstate) in enumerate(docs):
             self.trainer.doc = doc
             self.trainer.actionstate = actionstate
@@ -243,27 +243,28 @@ def evaluate(trainer, docs, data, message):
 
 
 def load_docs(dataset_name, word_vectors):
-    return (dataset.Dataset(dataset_name, model_properties.MentionRankingProps(), word_vectors),
-            zip(util.load_pickle(directories.DOCUMENTS + dataset_name + '_docs.pkl'),
-                util.load_pickle(directories.ACTION_SPACE + dataset_name + '_action_space.pkl')))
+    return (datasets.Dataset(dataset_name, model_properties.MentionRankingProps(), word_vectors),
+            zip(utils.load_pickle(directories.DOCUMENTS + dataset_name + '_docs.pkl'),
+                utils.load_pickle(directories.ACTION_SPACE + dataset_name + '_action_space.pkl')))
 
 
 class Trainer:
     def __init__(self, model_props, train_set='train', test_set='dev', n_epochs=200,
                  empty_buffer=True, betas=None, write_every=1, max_docs=10000):
+        self.model_props = model_props
         if betas is None:
-            betas = [0]
+            betas = [0.8 ** i for i in range(1, 5)]
         self.write_every = write_every
 
-        print "Model=" + directories.CLUSTERER + ", ordering from " + directories.ACTION_SPACE
+        print "Model=" + model_props.path + ", ordering from " + directories.ACTION_SPACE
         self.pair_model, self.anaphoricity_model, self.model, word_vectors = \
             clustering_models.get_models(model_props)
         json_string = self.model.to_json()
-        open(directories.CLUSTERER + 'architecture.json', 'w').write(json_string)
-        util.rmkdir(directories.CLUSTERER + 'src')
+        open(model_props.path + 'architecture.json', 'w').write(json_string)
+        utils.rmkdir(model_props.path + 'src')
         for fname in os.listdir('.'):
             if fname.endswith('.py'):
-                shutil.copyfile(fname, directories.CLUSTERER + 'src/' + fname)
+                shutil.copyfile(fname, model_props.path + 'src/' + fname)
 
         self.train_data, self.train_docs = load_docs(train_set, word_vectors)
         print "Train loaded"
@@ -290,7 +291,7 @@ class Trainer:
         replay_memory = ReplayMemory(self, self.model)
         for self.epoch in range(n_epochs):
             print 80 * "-"
-            print "ITERATION", (self.epoch + 1), "model =", directories.CLUSTERER
+            print "ITERATION", (self.epoch + 1), "model =", model_props.path
             ar = AgentRunner(self, self.train_docs, self.train_data, "Training", replay_memory,
                              beta=0 if self.epoch >= len(betas) else betas[self.epoch])
             self.train_pairs = ar.merged_pairs
@@ -312,7 +313,7 @@ class Trainer:
         epoch_stats.update({"train " + k: v for k, v in train_scores.iteritems()})
         epoch_stats.update({"test " + k: v for k, v in test_scores.iteritems()})
         self.history.append(epoch_stats)
-        util.write_pickle(self.history, directories.CLUSTERER + 'history.pkl')
+        utils.write_pickle(self.history, self.model_props.path + 'history.pkl')
         timer.print_totals()
 
         test_conll = epoch_stats["test conll"]
@@ -327,17 +328,17 @@ class Trainer:
             print "New best CoNLL in window, saving model"
             self.save_progress(dev_pairs, test_pairs,
                                str(self.write_every * int(self.epoch / self.write_every)))
-        self.model.save_weights(directories.CLUSTERER + "weights.hdf5", overwrite=True)
+        self.model.save_weights(self.model_props.path + "weights.hdf5", overwrite=True)
 
     def save_progress(self, dev_pairs, test_pairs, prefix):
-        self.model.save_weights(directories.CLUSTERER + prefix + "_weights.hdf5", overwrite=True)
-        write_pairs(dev_pairs, prefix + "_dev_pairs")
-        write_pairs(test_pairs, prefix + "_test_pairs")
-        write_pairs(self.train_pairs, prefix + "_train_pairs")
+        self.model.save_weights(self.model_props.path + prefix + "_weights.hdf5", overwrite=True)
+        write_pairs(dev_pairs, self.model_props.path + prefix + "_dev_pairs")
+        write_pairs(test_pairs, self.model_props.path + prefix + "_test_pairs")
+        write_pairs(self.train_pairs, self.model_props.path + prefix + "_train_pairs")
 
 
-def write_pairs(pairs, name):
-    with open(directories.CLUSTERER + name, 'w') as f:
+def write_pairs(pairs, path):
+    with open(path, 'w') as f:
         for did, doc_merged_pairs in pairs.iteritems():
             f.write(str(did) + "\t")
             for m1, m2 in doc_merged_pairs:

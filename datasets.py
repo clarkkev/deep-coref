@@ -1,5 +1,5 @@
 import timer
-import util
+import utils
 import directories
 import numpy as np
 
@@ -37,7 +37,7 @@ class DatasetColumn:
             self.data = np.array(self.data, dtype='bool') \
                 if self.name == 'y' or self.name == 'pf' else np.vstack(self.data)
             print "Writing {:}, dtype={:}, size={:}".format(self.name, str(self.data.dtype),
-                                                            util.sizeof_fmt(self.data.nbytes))
+                                                            utils.sizeof_fmt(self.data.nbytes))
             np.save(path + self.name, self.data)
 
 
@@ -47,7 +47,7 @@ class DocumentDataBuilder:
         self.mention_inds = DatasetColumn('dmi', columns)
         self.pair_inds = DatasetColumn('dpi', columns)
         self.features = DatasetColumn('df', columns)
-        self.genres = util.load_pickle(directories.MISC + 'genres.pkl')
+        self.genres = utils.load_pickle(directories.MISC + 'genres.pkl')
 
     def add_doc(self, ms, me, ps, pe, features):
         self.mention_inds.append(np.array([ms, me], dtype='int32'))
@@ -58,7 +58,7 @@ class DocumentDataBuilder:
     def write(self, dataset_name):
         path = directories.DOC_DATA + dataset_name + '/'
         if not self.columns:
-            util.rmkdir(path)
+            utils.rmkdir(path)
         self.mention_inds.write(path)
         self.pair_inds.write(path)
         self.features.write(path)
@@ -115,7 +115,7 @@ class MentionDataBuilder:
     def write(self, dataset_name):
         path = directories.MENTION_DATA + dataset_name + '/'
         if not self.columns:
-            util.rmkdir(path)
+            utils.rmkdir(path)
         self.words.write(path)
         self.spans.write(path)
         self.features.write(path)
@@ -158,7 +158,7 @@ class PairDataBuilder:
     def write(self, dataset_name):
         path = directories.PAIR_DATA + dataset_name + '/'
         if not self.columns:
-            util.rmkdir(path)
+            utils.rmkdir(path)
         self.pair_indices.write(path)
         self.pair_features.write(path)
         self.y.write(path)
@@ -174,6 +174,7 @@ class PairDataBuilder:
 class Dataset:
     def __init__(self, dataset_name, model_props, word_vectors):
         self.model_props = model_props
+        self.name = dataset_name
         mentions_path = directories.MENTION_DATA + dataset_name + '/'
         pair_path = directories.PAIR_DATA + dataset_name + '/'
         docs_path = directories.DOC_DATA + dataset_name + '/'
@@ -257,6 +258,16 @@ class Dataset:
 
 
 class DocumentBatchedDataset:
+    """
+    Shuffling and then iterating through all mention pairs in the dataset has two problems:
+        1. We want to compute a representation for a mention (in our case by looking up some
+           word embeddings and applying a hidden layer) once for every pair of mentions instead of
+           once for every mention.
+        2. For mention-ranking models, all pairs involving the current candidate anaphor must be
+           in the same batch.
+    We deal with this by instead using each document as a batch, except for large documents, which
+    we split into chunks).
+    """
     def __init__(self, dataset_name, model_props, max_pairs=10000, with_ids=False):
         self.name = dataset_name
         self.model_props = model_props
@@ -300,7 +311,6 @@ class DocumentBatchedDataset:
                                             np.ones(ana, dtype='int32')
                                             for ana in range(0, me - ms)])
             self.pair_nums += [np.array(p) for p in zip(pair_antecedents, pair_anaphors)]
-
         self.pair_nums = np.vstack(self.pair_nums)
 
         self.doc_sizes = {}
@@ -419,8 +429,8 @@ class DocumentBatchedDataset:
 
                 min_anaphor = max_anaphor
                 min_pair = max_pair
-
         timer.stop("preprocess_dataset")
+
         self.n_batches = len(self.batches)
         self.pairs_per_batch = float(self.n_pairs) / self.n_batches
         self.anaphoric_anaphors_per_batch = float(self.n_anaphoric_anaphors) / self.n_batches
@@ -478,6 +488,8 @@ class DocumentBatchedDataset:
                 X['ends'] = ends[:, np.newaxis]
                 X['costs'] = costs[:, np.newaxis]
                 X['y'] = np.zeros((starts.size, 1))
+                if self.model_props.use_rewards:
+                    X['cost_ptrs'] = costs
             else:
                 X['y'] = self.y[pairs][:, np.newaxis]
 

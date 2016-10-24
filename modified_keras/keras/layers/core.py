@@ -287,7 +287,7 @@ class Merge(Layer):
             raise Exception("Please specify two or more input layers (or containers) to merge")
 
         if mode not in {'sum', 'mul', 'concat', 'ave', 'join', 'cos', 'dot', 'index', 'imax',
-                        'iavg', 'imaxavg', 'imaxminavg', 'mm'}:
+                        'iavg', 'imaxavg', 'imaxminavg', 'mm', 'risk'}:
             raise Exception("Invalid merge mode: " + str(mode))
 
         if mode in {'sum', 'mul', 'ave', 'cos'}:
@@ -352,7 +352,7 @@ class Merge(Layer):
     @property
     def output_shape(self):
         input_shapes = [layer.output_shape for layer in self.layers]
-        if self.mode in ['sum', 'mul', 'ave', 'index', 'imax', 'iavg', 'mm']:
+        if self.mode in ['sum', 'mul', 'ave', 'index', 'imax', 'iavg', 'mm', 'risk']:
             return input_shapes[0]
         elif self.mode == 'imaxavg':
             return input_shapes[0][0], 2 * input_shapes[0][1]
@@ -429,6 +429,17 @@ class Merge(Layer):
                        T.max(scs[start[0]:end[0]][T.eq(csts[start[0]:end[0]], 0).nonzero()[0]])))
             outputs, _ = theano.scan(fn=fn,
                                      outputs_info=None,
+                                     sequences=[starts, ends],
+                                     non_sequences=[scores, costs])
+            return outputs.reshape((outputs.size, 1))
+        elif self.mode == 'risk':
+            scores = self.layers[0].get_output(train)
+            starts = self.layers[1].get_output(train)
+            ends = self.layers[2].get_output(train)
+            costs = self.layers[3].get_output(train)
+            fn = lambda start, end, scs, csts: \
+                T.sum(costs[start[0]:end[0]] * T.nnet.softmax(scs[start[0]:end[0]].T).T)
+            outputs, _ = theano.scan(fn=fn,
                                      sequences=[starts, ends],
                                      non_sequences=[scores, costs])
             return outputs.reshape((outputs.size, 1))

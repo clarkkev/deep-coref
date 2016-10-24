@@ -1,4 +1,4 @@
-import util
+import utils
 import directories
 import shutil
 import timer
@@ -91,7 +91,7 @@ def write_probable_pairs(dataset_name, action_space_path, scores):
     margin_removals = 0
     total_pairs = 0
     total_size = 0
-    for did in util.logged_loop(scores):
+    for did in utils.logged_loop(scores):
         doc_scores = scores[did]
         pairs = sorted([pair for pair in doc_scores.keys() if pair[0] != -1],
                        key=lambda pr: doc_scores[pr] - (-1 - 0.3*doc_scores[(-1, pr[1])]),
@@ -121,7 +121,7 @@ def write_probable_pairs(dataset_name, action_space_path, scores):
     print "avg size without filter: {:.1f}".format(total_pairs / float(len(scores)))
     print "avg size: {:.1f}".format(total_size / float(len(scores)))
     print "margin removals size: {:.1f}".format(margin_removals / float(len(scores)))
-    util.write_pickle(probable_pairs, action_space_path + dataset_name + '_probable_pairs.pkl')
+    utils.write_pickle(probable_pairs, action_space_path + dataset_name + '_probable_pairs.pkl')
     shutil.copyfile('clustering_preprocessing.py',
                     action_space_path + 'clustering_preprocessing.py')
 
@@ -129,9 +129,9 @@ def write_probable_pairs(dataset_name, action_space_path, scores):
 def write_action_spaces(dataset_name, action_space_path, model_path, ltr=False):
     output_file = action_space_path + dataset_name + "_action_space.pkl"
     print "Writing candidate actions to " + output_file
-    scores = util.load_pickle(model_path + dataset_name + "_scores.pkl")
+    scores = utils.load_pickle(model_path + dataset_name + "_scores.pkl")
     write_probable_pairs(dataset_name, action_space_path, scores)
-    probable_pairs = util.load_pickle(action_space_path + dataset_name + '_probable_pairs.pkl')
+    probable_pairs = utils.load_pickle(action_space_path + dataset_name + '_probable_pairs.pkl')
 
     possible_pairs_total = 0
     action_spaces = []
@@ -152,12 +152,12 @@ def write_action_spaces(dataset_name, action_space_path, model_path, ltr=False):
             possible_pairs = get_possible_pairs(probable_pairs[did])
             possible_pairs_total += len(possible_pairs)
             action_spaces.append(ActionSpace(did, actions, possible_pairs))
-    util.write_pickle(action_spaces, output_file)
+    utils.write_pickle(action_spaces, output_file)
 
 
 def main(ranking_model):
     write_action_spaces("dev", directories.ACTION_SPACE,
-                        directories.MODELS_BASE + ranking_model + "/")
+                        directories.MODELS + ranking_model + "/")
     write_action_spaces("test", directories.ACTION_SPACE,
-                        directories.MODELS_BASE + ranking_model + "/")
+                        directories.MODELS + ranking_model + "/")
 

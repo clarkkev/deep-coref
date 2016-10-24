@@ -1,4 +1,4 @@
-import util
+import utils
 import directories
 import timer
 from collections import defaultdict
@@ -127,7 +127,7 @@ class Document:
 def load_gold(dataset_name):
     gold = {}
     mention_to_gold = {}
-    for doc_gold in util.load_json_lines(directories.GOLD + dataset_name):
+    for doc_gold in utils.load_json_lines(directories.GOLD + dataset_name):
         did = int(doc_gold.keys()[0])
         gold[did] = doc_gold[str(did)]
         mention_to_gold[did] = {}
@@ -153,7 +153,7 @@ def write_docs(dataset_name):
     for did in gold:
         docs.append(Document(did, mentions[did],
                              gold[did], mention_to_gold[did]))
-    util.write_pickle(docs, directories.DOCUMENTS + dataset_name + '_docs.pkl')
+    utils.write_pickle(docs, directories.DOCUMENTS + dataset_name + '_docs.pkl')
 
 
 def main():

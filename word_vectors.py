@@ -1,5 +1,5 @@
 import directories
-import util
+import utils
 import re
 import numpy as np
 
@@ -29,13 +29,13 @@ class WordVectors:
     def __init__(self, load=False, vectors_file=directories.PRETRAINED_WORD_VECTORS,
                  keep_all_words=False):
         if load:
-            self.vocabulary = util.load_pickle(directories.RELEVANT_VECTORS + 'vocabulary.pkl')
+            self.vocabulary = utils.load_pickle(directories.RELEVANT_VECTORS + 'vocabulary.pkl')
             self.vectors = np.load(directories.RELEVANT_VECTORS + 'word_vectors.npy')
             self.d = self.vectors.shape[1]
         else:
             self.vocabulary = {}
             self.vectors = []
-            word_counts = util.load_pickle(directories.MISC + 'word_counts.pkl')
+            word_counts = utils.load_pickle(directories.MISC + 'word_counts.pkl')
             with open(vectors_file) as f:
                 for line in f:
                     split = line.decode('utf8').split()
@@ -53,7 +53,7 @@ class WordVectors:
             unknown_mass = sum(c for w, c in word_counts.iteritems() if c < ADD_WORD_THRESHOLD and
                                w not in self.vocabulary)
             total_mass = sum(word_counts.values())
-            print "Pretrained embedding size:", util.lines_in_file(vectors_file)
+            print "Pretrained embedding size:", utils.lines_in_file(vectors_file)
             print "Unknowns by mass: {:}/{:} = {:.2f}%%"\
                 .format(unknown_mass, total_mass, 100 * unknown_mass / float(total_mass))
             print "Unknowns by count: {:}/{:} = {:.2f}%%"\
@@ -91,4 +91,4 @@ class WordVectors:
 
     def write(self, path=directories.RELEVANT_VECTORS):
         np.save(path + 'word_vectors', np.vstack(self.vectors))
-        util.write_pickle(self.vocabulary, path + 'vocabulary.pkl')
+        utils.write_pickle(self.vocabulary, path + 'vocabulary.pkl')
