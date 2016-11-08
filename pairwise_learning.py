@@ -210,12 +210,13 @@ def set_costs(dataset, docs):
 def test(model_props=None, model_name=None, weights_file='best_weights', dataset_name='test',
          save_output=True, save_scores=False):
     if model_props is None:
-        model_props = model_properties.MentionRankingProps(load_weights_from=model_name,
+        model_props = model_properties.MentionRankingProps(name=model_name,
+                                                           load_weights_from=model_name,
                                                            weights_file=weights_file)
 
     print "Loading data"
     vectors = np.load(directories.RELEVANT_VECTORS + 'word_vectors.npy')
-    dataset = datasets.DocumentBatchedDataset(dataset_name + "_reduced", model_props, with_ids=True)
+    dataset = datasets.DocumentBatchedDataset(dataset_name, model_props, with_ids=True)
     docs = utils.load_pickle(directories.DOCUMENTS + dataset_name + '_docs.pkl')
     stats = {}
 
@@ -289,10 +290,7 @@ def evaluate_model(dataset, docs, model, model_props, stats, save_output=False, 
         ]))
 
 
-def train(model_props=None, n_epochs=10000, reduced=False, dev_set_name='dev'):
-    if model_props is None:
-        model_props = model_properties.MentionRankingProps()
-
+def train(model_props, n_epochs=10000, reduced=False, dev_set_name='dev'):
     print "Training", model_props.path
     pprint(model_props.__dict__)
 
@@ -383,6 +381,8 @@ def train(model_props=None, n_epochs=10000, reduced=False, dev_set_name='dev'):
             best_val_score_in_window = score
             model.save_weights(model_props.path + "weights_{:}.hdf5".format(
                 write_every * (epoch / write_every)), overwrite=True)
+            if epoch + write_every >= n_epochs:
+                model.save_weights(model_props.path + "final_weights.hdf5", overwrite=True)
         if epoch % write_every == 0:
             best_val_score_in_window = 1000
 

@@ -335,6 +335,7 @@ class Trainer:
         write_pairs(dev_pairs, self.model_props.path + prefix + "_dev_pairs")
         write_pairs(test_pairs, self.model_props.path + prefix + "_test_pairs")
         write_pairs(self.train_pairs, self.model_props.path + prefix + "_train_pairs")
+        write_pairs(self.test_docs, self.model_props.path + prefix + "_test_processed_docs")
 
 
 def write_pairs(pairs, path):

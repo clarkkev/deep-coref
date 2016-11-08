@@ -87,4 +87,4 @@ def main(model_path, dataset_name):
 
 
 if __name__ == '__main__':
-    main()
+    main(directories.MODELS + 'reward_rescaling/', 'test')

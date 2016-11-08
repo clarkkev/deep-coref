@@ -1,8 +1,8 @@
 import utils
 
-DATA = '/scr/kevclark/clean_english_conll/'#'./data/'
+DATA = './data/'
 
-RAW = DATA + 'raw/'
+RAW = DATA + 'data_raw/'
 MODELS = DATA + 'models/'
 CLUSTERERS = DATA + 'clusterers/'
 DOCUMENTS = DATA + 'documents/'
