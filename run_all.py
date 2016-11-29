@@ -40,7 +40,8 @@ def pretrain(model_props):
         pairwise_learning.train(model_props, n_epochs=50)
 
 
-def make_predictions(model_props, datasets, save_scores=False):
+def make_predictions(model_props, load_weights_from, datasets, save_scores=False):
+    model_props.load_weights_from = load_weights_from
     model_props.weights_file = 'final_weights'
     for dataset_name in datasets:
         pairwise_learning.test(model_props=model_props, save_scores=save_scores, save_output=True,
@@ -65,13 +66,14 @@ def train_pairwise(model_props, mode='ranking'):
 
 def train_and_test_pairwise(model_props, mode='ranking'):
     train_pairwise(model_props, mode=mode)
-    make_predictions(model_props, ["dev", "test"])
+    model_props.set_name(mode)
+    make_predictions(model_props, mode, ["dev", "test"])
 
 
 def acl2016():
     model_props = model_properties.MentionRankingProps()
     train_pairwise(model_props)
-    make_predictions(model_props, ["train", "dev", "test"], save_scores=True)
+    make_predictions(model_props, 'ranking', ["train", "dev", "test"], save_scores=True)
     train_clustering(model_properties.ClusterRankingProps())
 
 

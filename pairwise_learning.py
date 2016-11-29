@@ -63,13 +63,13 @@ class RankingMetricsTracker:
     def finish(self, stats):
         loss = self.loss_sum / self.n_examples
         if not self.model_props.anaphoricity:
-            printout = "{:} = loss: {:.4f} - P@1: {:}/{:} = {:.2f}%"\
+            printout = "{:} - loss: {:.4f} - P@1: {:}/{:} = {:.2f}%"\
                 .format(self.name, loss, self.CL, self.CL + self.WL,
                         100 * self.CL / float(self.CL + self.WL))
         else:
             ana_prec = self.CN / max(1, float(self.CN + self.FN))
             ana_rec = self.CN / max(1, float(self.CN + self.FL))
-            printout = "{:} = loss: {:.4f} - CN: {:} - CL: {:} - FN: {:} - FL: {:} - WL: {:}\n" \
+            printout = "{:} - loss: {:.4f} - CN: {:} - CL: {:} - FN: {:} - FL: {:} - WL: {:}\n" \
                        "      ranking: {:.4f} - anaphoricity: {:.4f}"\
                 .format(self.name, loss, self.CN, self.CL, self.FN, self.FL, self.WL,
                         self.CL / max(1, float(self.CL + self.WL)),
@@ -223,7 +223,7 @@ def test(model_props=None, model_name=None, weights_file='best_weights', dataset
     print "Building model"
     model, _ = pairwise_models.get_model(dataset, vectors, model_props)
 
-    print "Evaluating model"
+    print "Evaluating model on", dataset_name
     evaluate_model(dataset, docs, model, model_props, stats,
                    save_output=save_output, save_scores=save_scores)
     timer.clear()
@@ -233,9 +233,9 @@ def test(model_props=None, model_name=None, weights_file='best_weights', dataset
 def evaluate_model(dataset, docs, model, model_props, stats, save_output=False, save_scores=False,
                    print_table=False):
     prog = utils.Progbar(dataset.n_batches)
-    mt = RankingMetricsTracker("dev", model_props=model_props) \
-        if model_props.ranking else ClassificationMetricsTracker("dev")
-    mta = ClassificationMetricsTracker("dev anaphoricity", anaphoricity=True)
+    mt = RankingMetricsTracker(dataset.name, model_props=model_props) \
+        if model_props.ranking else ClassificationMetricsTracker(dataset.name)
+    mta = ClassificationMetricsTracker(dataset.name + " anaphoricity", anaphoricity=True)
 
     docs_by_id = {doc.did: doc for doc in docs} if model_props.ranking else {}
     saved_links, saved_scores = (defaultdict(list) if save_output else None,
@@ -266,7 +266,7 @@ def evaluate_model(dataset, docs, model, model_props, stats, save_output=False, 
 
     timer.start("metrics")
     if model_props.ranking:
-        stats.update(compute_metrics(docs, "dev"))
+        stats.update(compute_metrics(docs, dataset.name))
     stats["validate time"] = time.time() - prog.start
     if model_props.anaphoricity and not model_props.ranking:
         mta.finish(stats)
@@ -277,16 +277,16 @@ def evaluate_model(dataset, docs, model, model_props, stats, save_output=False, 
 
     if print_table:
         print " & ".join(map(lambda x: "{:.2f}".format(x * 100), [
-            stats["dev muc precision"],
-            stats["dev muc recall"],
-            stats["dev muc"],
-            stats["dev b3 precision"],
-            stats["dev b3 recall"],
-            stats["dev b3"],
-            stats["dev ceafe precision"],
-            stats["dev ceafe recall"],
-            stats["dev ceafe"],
-            stats["dev conll"],
+            stats[dataset.name + " muc precision"],
+            stats[dataset.name + " muc recall"],
+            stats[dataset.name + " muc"],
+            stats[dataset.name + " b3 precision"],
+            stats[dataset.name + " b3 recall"],
+            stats[dataset.name + " b3"],
+            stats[dataset.name + " ceafe precision"],
+            stats[dataset.name + " ceafe recall"],
+            stats[dataset.name + " ceafe"],
+            stats[dataset.name + " conll"],
         ]))
 
 
