@@ -156,6 +156,8 @@ def write_action_spaces(dataset_name, action_space_path, model_path, ltr=False):
 
 
 def main(ranking_model):
+    write_action_spaces("train", directories.ACTION_SPACE,
+                        directories.MODELS + ranking_model + "/")
     write_action_spaces("dev", directories.ACTION_SPACE,
                         directories.MODELS + ranking_model + "/")
     write_action_spaces("test", directories.ACTION_SPACE,
