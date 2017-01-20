@@ -42,7 +42,7 @@ def add_mention_reprs(graph, name, model_props):
                    name=pair_embeddings_reprs if model_props.use_spans else reprs,
                    input=pair_embeddings_dropped)
 
-    # combine word and span reprsesentations to get mention represesentation
+    # combine word and span representations to get mention representation
     if model_props.use_spans:
         graph.add_node(Identity(), name=reprs,
                        inputs=[pair_spans_reprs, pair_embeddings_reprs], merge_mode='sum')
