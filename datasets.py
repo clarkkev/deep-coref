@@ -260,13 +260,13 @@ class Dataset:
 class DocumentBatchedDataset:
     """
     Shuffling and then iterating through all mention pairs in the dataset has two problems:
-        1. We want to compute a representation for a mention (in our case by looking up some
-           word embeddings and applying a hidden layer) once for every pair of mentions instead of
-           once for every mention.
+        1. For the sake of efficiency we want to compute a representation for a mention (in our
+           case by looking up some word embeddings and applying a hidden layer) once for every
+           mention instead of once for every pair of mentions.
         2. For mention-ranking models, all pairs involving the current candidate anaphor must be
            in the same batch.
     We deal with this by instead using each document as a batch, except for large documents, which
-    we split into chunks).
+    we split into chunks.
     """
     def __init__(self, dataset_name, model_props, max_pairs=10000, with_ids=False):
         self.name = dataset_name
