@@ -25,7 +25,7 @@ Do the following to train and evaluate the neural mention-ranking model with rew
 
 3. Run the [NeuralCorefDataExporter](https://github.com/stanfordnlp/CoreNLP/blob/master/src/edu/stanford/nlp/coref/neural/NeuralCorefDataExporter.java) class in the development version of Stanford's CoreNLP (you will need to fork from the [github](https://github.com/stanfordnlp/CoreNLP/)) using the [neural-coref-conll](https://github.com/stanfordnlp/CoreNLP/blob/master/src/edu/stanford/nlp/coref/properties/neural-english-conll.properties) properties file:
 ```bash
-java -Xmx2g -cp stanford-corenlp.jar:stanford-corenlp-models-3.7.0.jar:* edu.stanford.nlp.coref.NeuralCorefDataExporter <properties-file> <output-path>
+java -Xmx2g -cp stanford-corenlp.jar:stanford-corenlp-models-3.7.0.jar:* edu.stanford.nlp.coref.neural.NeuralCorefDataExporter <properties-file> <output-path>
 ```
 This does mention detection and feature extraction on the CoNLL data and then outputs the results as json.
 
