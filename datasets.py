@@ -305,12 +305,13 @@ class DocumentBatchedDataset:
         self.pair_nums = []
         for did in np.arange(doc_pairs.shape[0]):
             ms, me = doc_mentions[did]
-            pair_antecedents = np.concatenate([np.arange(ana)
-                                               for ana in range(0, me - ms)])
-            pair_anaphors = np.concatenate([ana *
-                                            np.ones(ana, dtype='int32')
-                                            for ana in range(0, me - ms)])
-            self.pair_nums += [np.array(p) for p in zip(pair_antecedents, pair_anaphors)]
+            if me != ms:
+                pair_antecedents = np.concatenate([np.arange(ana)
+                                                   for ana in range(0, me - ms)])
+                pair_anaphors = np.concatenate([ana *
+                                                np.ones(ana, dtype='int32')
+                                                for ana in range(0, me - ms)])
+                self.pair_nums += [np.array(p) for p in zip(pair_antecedents, pair_anaphors)]
         self.pair_nums = np.vstack(self.pair_nums)
 
         self.doc_sizes = {}
