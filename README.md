@@ -23,14 +23,16 @@ Do the following to train and evaluate the neural mention-ranking model with rew
 
 2. Download pretrained word embeddings. We use 50 dimensional word2vec embeddings for English ([link](https://drive.google.com/open?id=0B5Y5rz_RUKRmdEFPcGIwZ2xLRW8)) and 64 dimenensional [polyglot](https://sites.google.com/site/rmyeid/projects/polyglot) embeddings for Chinese ([link](http://bit.ly/19bTKeS)) in our paper.
 
-3. Run the [NeuralCorefDataExporter](https://github.com/stanfordnlp/CoreNLP/blob/master/src/edu/stanford/nlp/coref/neural/NeuralCorefDataExporter.java) class in the development version of Stanford's CoreNLP (you will need to fork from the [github](https://github.com/stanfordnlp/CoreNLP/)) using the [neural-coref-conll](https://github.com/stanfordnlp/CoreNLP/blob/master/src/edu/stanford/nlp/coref/properties/neural-english-conll.properties) properties file:
+3. Run the [NeuralCorefDataExporter](https://github.com/stanfordnlp/CoreNLP/blob/master/src/edu/stanford/nlp/coref/neural/NeuralCorefDataExporter.java) class in the development version of Stanford's CoreNLP (you will need to fork from the [github](https://github.com/stanfordnlp/CoreNLP/)) using the [neural-coref-conll](https://github.com/stanfordnlp/CoreNLP/blob/master/src/edu/stanford/nlp/coref/properties/neural-english-conll.properties) properties file. This does mention detection and feature extraction on the CoNLL data and then outputs the results as json. The command is
 ```bash
 java -Xmx2g -cp stanford-corenlp.jar:stanford-corenlp-models-3.7.0.jar:* edu.stanford.nlp.coref.neural.NeuralCorefDataExporter <properties-file> <output-path>
 ```
-This does mention detection and feature extraction on the CoNLL data and then outputs the results as json.
 
 4. Run run_all.py, preferably on a GPU. Training takes roughly 7 days on a GTX TITAN GPU.
 
 run_all.py also contains methods to train the other models from the papers.
 
 Once a model is trained, you can use pairwise_learning.py to evaluate the model and output_utils.py to view its predictions.
+
+#### Performance
+Following the above instructions will replicate results from the 2016 EMNLP paper (~65.7 CoNLL F1 on the CoNLL 2012 English test set). However, we recently noticed that using rule-based mention filtering from Stanford's deterministic coreference system is significantly decreasing the score. Add ```coref.md.liberalMD=true``` to the properties file during feature extraction (step 3) to disable this filtering and achieve even better performance (~66.9 CoNLL F1 on the CoNLL 2012 English test set).
