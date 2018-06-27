@@ -4,6 +4,10 @@ This repository contains code for training and running the neural coreference mo
 * ["Deep Reinforcement Learning for Mention-Ranking Coreference Models"](http://cs.stanford.edu/people/kevclark/resources/clark-manning-emnlp2016-deep.pdf), Kevin Clark and Christopher D. Manning, EMNLP 2016.
 * ["Improving Coreference Resolution by Learning Entity-Level Distributed Representations"](http://cs.stanford.edu/people/kevclark/resources/clark-manning-acl16-improving.pdf), Kevin Clark and Christopher D. Manning, ACL 2016.
 
+[Hugging Face](https://huggingface.co/) built a [coreference system](https://medium.com/huggingface/state-of-the-art-neural-coreference-resolution-for-chatbots-3302365dcf30) based on this
+  one with a [cool demo](https://huggingface.co/coref/). Their system is also [on
+  github](https://github.com/huggingface/neuralcoref).
+
 ### Requirements
 Theano, numpy, and scikit-learn. It also uses a slightly modified version of keras 0.2; run `python setup.py install` in the modified_keras directory to install.
 
@@ -35,4 +39,4 @@ run_all.py also contains methods to train the other models from the papers.
 Once a model is trained, you can use pairwise_learning.py to evaluate the model and output_utils.py to view its predictions.
 
 #### Performance
-Following the above instructions will replicate results from the 2016 EMNLP paper (~65.7 CoNLL F1 on the CoNLL 2012 English test set). However, we recently noticed that using rule-based mention filtering from Stanford's deterministic coreference system is significantly decreasing the score. Add ```coref.md.liberalMD=true``` to the properties file during feature extraction (step 3) to disable this filtering and achieve even better performance (~66.9 CoNLL F1 on the CoNLL 2012 English test set).
+Following the above instructions will replicate results from the 2016 EMNLP paper (~65.7 CoNLL F1 on the CoNLL 2012 English test set). However, we noticed that using rule-based mention filtering from Stanford's deterministic coreference system is significantly decreasing the score. Add ```coref.md.liberalMD=true``` to the properties file during feature extraction (step 3) to disable this filtering and achieve even better performance (~66.9 CoNLL F1 on the CoNLL 2012 English test set).
