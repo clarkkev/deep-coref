@@ -5,7 +5,7 @@ from operator import itemgetter
 
 
 ENDC = '\033[0m'
-COLORS = ['\033[' + str(n) + 'm' for n in range(91, 97) + [90]]
+COLORS = ['\033[' + str(n) + 'm' for n in list(range(91, 97)) + [90]]
 
 
 def subscript(n):
@@ -17,7 +17,7 @@ def write_links(model_path, dataset_name):
     with open(model_path + dataset_name + "_links", "w") as f:
         for did in links:
             f.write(str(did) + "\t" + " ".join(
-                map(lambda (m1, m2): str(m1) + "," + str(m2), links[did])) + "\n")
+                map(lambda m1, m2: str(m1) + "," + str(m2), links[did])) + "\n")
 
 
 def main(model_path, dataset_name):
@@ -79,11 +79,11 @@ def main(model_path, dataset_name):
                         s[j] = annotation + s[j]
                     else:
                         s[j] = s[j] + annotation
-            print " ".join(s)
+            print(" ".join(s))
 
-        print
-        print 80 * "="
-        print
+        print()
+        print(80 * "=")
+        print()
 
 
 if __name__ == '__main__':

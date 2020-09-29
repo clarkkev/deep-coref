@@ -111,8 +111,8 @@ class ReplayMemory:
         timer.stop("train")
 
         if self.trainer.n == 1:
-            print "Start training!"
-            print
+            print("Start training!")
+            print()
 
     def train_all(self):
         timer.start("train")
@@ -130,7 +130,7 @@ class ReplayMemory:
                 (np.sum(np.abs(new_weight - old_weight)), new_weight.size)
                 for new_weight, old_weight in zip(self.model.get_weights(), model_weights)]
         summed = np.sum(map(np.array, weight_diffs), axis=0)
-        print "weight diffs", weight_diffs, summed
+        print("weight diffs", weight_diffs, summed)
 
     def train_on_example(self, X):
         loss = self.model.train_on_batch(X)
@@ -172,7 +172,7 @@ class AgentRunner:
         self.merged_pairs = {}
         self.training = self.replay_memory is not None
 
-        print self.message
+        print(self.message)
         random.shuffle(docs)
         if self.training:
             docs = docs[:docs_per_iteration]
@@ -256,7 +256,7 @@ class Trainer:
             betas = [0.8 ** i for i in range(1, 5)]
         self.write_every = write_every
 
-        print "Model=" + model_props.path + ", ordering from " + directories.ACTION_SPACE
+        print("Model=" + model_props.path + ", ordering from " + directories.ACTION_SPACE)
         self.pair_model, self.anaphoricity_model, self.model, word_vectors = \
             clustering_models.get_models(model_props)
         json_string = self.model.to_json()
@@ -267,13 +267,13 @@ class Trainer:
                 shutil.copyfile(fname, model_props.path + 'src/' + fname)
 
         self.train_data, self.train_docs = load_docs(train_set, word_vectors)
-        print "Train loaded"
+        print("Train loaded")
 
         self.dev_data, self.dev_docs = self.train_data, self.train_docs
-        print "Dev loaded!"
+        print("Dev loaded!")
 
         self.test_data, self.test_docs = load_docs(test_set, word_vectors)
-        print "Test loaded"
+        print("Test loaded")
 
         random.seed(0)
         random.shuffle(self.train_docs)
@@ -290,8 +290,8 @@ class Trainer:
         self.best_conll_window = 0
         replay_memory = ReplayMemory(self, self.model)
         for self.epoch in range(n_epochs):
-            print 80 * "-"
-            print "ITERATION", (self.epoch + 1), "model =", model_props.path
+            print( 80 * "-")
+            print("ITERATION", (self.epoch + 1), "model =", model_props.path)
             ar = AgentRunner(self, self.train_docs, self.train_data, "Training", replay_memory,
                              beta=0 if self.epoch >= len(betas) else betas[self.epoch])
             self.train_pairs = ar.merged_pairs
@@ -321,11 +321,11 @@ class Trainer:
             self.best_conll_window = 0
         if test_conll > self.best_conll:
             self.best_conll = test_conll
-            print "New best CoNLL, saving model"
+            print("New best CoNLL, saving model")
             self.save_progress(dev_pairs, test_pairs, "best")
         if test_conll > self.best_conll_window:
             self.best_conll_window = test_conll
-            print "New best CoNLL in window, saving model"
+            print("New best CoNLL in window, saving model")
             self.save_progress(dev_pairs, test_pairs,
                                str(self.write_every * int(self.epoch / self.write_every)))
         self.model.save_weights(self.model_props.path + "weights.hdf5", overwrite=True)

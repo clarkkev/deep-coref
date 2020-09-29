@@ -1,6 +1,6 @@
 import json
 import subprocess
-import cPickle
+import pickle
 import os
 import shutil
 import sys
@@ -9,17 +9,17 @@ import time
 
 
 def load_pickle(fname):
-    with open(fname) as f:
-        return cPickle.load(f)
+    with open(fname, 'rb') as f:
+        return pickle.load(f)
 
 
 def write_pickle(o, fname):
-    with open(fname, 'w') as f:
-        cPickle.dump(o, f, -1)
+    with open(fname, 'wb') as f:
+        pickle.dump(o, f, -1)
 
 
 def load_json_lines(fname):
-    with open(fname) as f:
+    with open(fname, 'rb') as f:
         for line in f:
             yield json.loads(line)
 

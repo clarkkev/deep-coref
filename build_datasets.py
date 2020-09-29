@@ -17,11 +17,11 @@ def explore_pairwise_features():
             else:
                 neg_sum += d["pair_features"][key]
                 neg_count += 1
-        print "positive counts", list(pos_sum)
-        print "negative counts", list(neg_sum)
-        print "feature odds", list(np.divide(pos_sum / pos_count,
-                                             (pos_sum / pos_count + neg_sum / neg_count)))
-        print
+        print("positive counts", list(pos_sum))
+        print("negative counts", list(neg_sum))
+        print("feature odds", list(np.divide(pos_sum / pos_count,
+                                             (pos_sum / pos_count + neg_sum / neg_count))))
+        print()
 
 
 def build_dataset(vectors, name, tune_fraction=0.0, reduced=False, columns=None):
@@ -35,7 +35,7 @@ def build_dataset(vectors, name, tune_fraction=0.0, reduced=False, columns=None)
     main_docs = DocumentDataBuilder(columns)
     tune_docs = DocumentDataBuilder(columns)
 
-    print "Building dataset", name + ("/tune" if tune_fraction > 0 else "")
+    print("Building dataset", name + ("/tune" if tune_fraction > 0 else ""))
     p = utils.Progbar(target=(2 if reduced else utils.lines_in_file(directories.RAW + name)))
     for i, d in enumerate(utils.load_json_lines(directories.RAW + name)):
         if reduced and i > 2:

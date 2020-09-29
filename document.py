@@ -12,7 +12,7 @@ class Document:
         self.did = did
         self.mentions = mentions
         self.gold = gold
-        self.mention_to_gold = {m: tuple(g) for m, g in mention_to_gold.iteritems()}
+        self.mention_to_gold = {m: tuple(g) for m, g in mention_to_gold.items()}
         self.reset()
 
     def reset(self):
@@ -128,7 +128,7 @@ def load_gold(dataset_name):
     gold = {}
     mention_to_gold = {}
     for doc_gold in utils.load_json_lines(directories.GOLD + dataset_name):
-        did = int(doc_gold.keys()[0])
+        did = int(list(doc_gold.keys())[0])
         gold[did] = doc_gold[str(did)]
         mention_to_gold[did] = {}
         for gold_cluster in doc_gold[str(did)]:

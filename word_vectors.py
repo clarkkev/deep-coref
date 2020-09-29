@@ -36,13 +36,13 @@ class WordVectors:
             self.vocabulary = {}
             self.vectors = []
             word_counts = utils.load_pickle(directories.MISC + 'word_counts.pkl')
-            with open(vectors_file) as f:
+            with open(vectors_file, 'rb') as f:
                 for line in f:
                     split = line.decode('utf8').split()
                     w = normalize(split[0])
                     if w not in self.vocabulary and (
                                         w == UNKNOWN_TOKEN or w in word_counts or keep_all_words):
-                        vec = np.array(map(float, split[1:]), dtype='float32')
+                        vec = np.array(list(map(float, split[1:])), dtype='float32')
                         if not self.vectors:
                             self.d = vec.size
                             self.vectors.append(np.zeros(self.d))  # reserve 0 for mask
@@ -50,22 +50,22 @@ class WordVectors:
                         self.vectors.append(vec)
 
             n_unkowns = len([w for w in word_counts if w not in self.vocabulary])
-            unknown_mass = sum(c for w, c in word_counts.iteritems() if c < ADD_WORD_THRESHOLD and
+            unknown_mass = sum(c for w, c in word_counts.items() if c < ADD_WORD_THRESHOLD and
                                w not in self.vocabulary)
             total_mass = sum(word_counts.values())
-            print "Pretrained embedding size:", utils.lines_in_file(vectors_file)
-            print "Unknowns by mass: {:}/{:} = {:.2f}%%"\
-                .format(unknown_mass, total_mass, 100 * unknown_mass / float(total_mass))
-            print "Unknowns by count: {:}/{:} = {:.2f}%%"\
-                .format(n_unkowns, len(word_counts), 100 * n_unkowns / float(len(word_counts)))
+            print("Pretrained embedding size:", utils.lines_in_file(vectors_file))
+            print("Unknowns by mass: {:}/{:} = {:.2f}%%"\
+                .format(unknown_mass, total_mass, 100 * unknown_mass / float(total_mass)))
+            print("Unknowns by count: {:}/{:} = {:.2f}%%"\
+                .format(n_unkowns, len(word_counts), 100 * n_unkowns / float(len(word_counts))))
 
-            for c, w in sorted([(w, c) for c, w in word_counts.iteritems()], reverse=True):
+            for c, w in sorted([(w, c) for c, w in word_counts.items()], reverse=True):
                 if w not in self.vocabulary and c > ADD_WORD_THRESHOLD:
-                    print "Adding", w, "count =", c
-                    self.add_vector(w)
+                    print("Adding", w, "count =", c,
+                    self.add_vector(w))
             if UNKNOWN_TOKEN not in self.vocabulary:
-                print "No presupplied unknown token"
-                self.add_vector(UNKNOWN_TOKEN)
+                print("No presupplied unknown token",
+                self.add_vector(UNKNOWN_TOKEN))
             self.add_vector(MISSING_TOKEN)
         self.unknown = self.vocabulary[UNKNOWN_TOKEN]
         self.missing = self.vocabulary[MISSING_TOKEN]
