@@ -61,10 +61,16 @@ def write_genres():
 
 
 def write_feature_names():
-    utils.write_pickle({f: i for i, f in enumerate(next(
-        utils.load_json_lines(directories.RAW + 'train'))["pair_feature_names"])},
-                      directories.MISC + 'pair_feature_names.pkl')
-
+    raw_train = directories.RAW + 'train'
+    try:
+        utils.write_pickle({f: i for i, f in enumerate(next(
+            utils.load_json_lines(raw_train))["pair_feature_names"])},
+                           directories.MISC + 'pair_feature_names.pkl')
+    except FileNotFoundError as e:
+        if e.filename == raw_train:
+            raise FileNotFoundError('Raw training data not found.  Perhaps you need to copy the original dataset first: %s' % e.filename) from e
+        else:
+            raise
 
 def main():
     write_feature_names()
