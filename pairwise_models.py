@@ -192,6 +192,7 @@ def set_weights(graph, weights_from, weights_file):
 
 def get_weights(model, weight_file):
     w_file = directories.MODELS + model + '/' + weight_file + '.hdf5'
+    print("Loading model '%s' weights '%s' from %s" % (model, weight_file, w_file))
     f = h5py.File(w_file, mode='r')
     g = f['graph']
     return [g['param_{}'.format(p)] for p in range(g.attrs['nb_params'])]
