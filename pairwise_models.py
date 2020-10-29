@@ -113,7 +113,7 @@ def get_embedding_layer(model_props, input_sizes, vectors):
 
 
 def build_graph(train, vectors, model_props, representation=False):
-    input_sizes = {k: v.shape[1] for k, v in next(X for X in train).iteritems() if v.ndim == 2}
+    input_sizes = {k: v.shape[1] for k, v in next(X for X in train).items() if v.ndim == 2}
 
     graph = Graph()
     graph.add_input(name='anaphors', input_shape=(1,), dtype='int32')
@@ -186,13 +186,14 @@ def build_graph(train, vectors, model_props, representation=False):
 
 
 def set_weights(graph, weights_from, weights_file):
-    print "Setting weights from", weights_from
+    print("Setting weights from", weights_from)
     graph.set_weights(get_weights(weights_from, weights_file))
 
 
 def get_weights(model, weight_file):
     w_file = directories.MODELS + model + '/' + weight_file + '.hdf5'
-    f = h5py.File(w_file)
+    print("Loading model '%s' weights '%s' from %s" % (model, weight_file, w_file))
+    f = h5py.File(w_file, mode='r')
     g = f['graph']
     return [g['param_{}'.format(p)] for p in range(g.attrs['nb_params'])]
 

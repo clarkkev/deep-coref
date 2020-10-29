@@ -60,7 +60,7 @@ def get_static_model(model_props, anaphoricity=False):
         graph.add_node(Dropout(0.5), name='h3drop', input='h3')
     graph.add_output('out', input='h' + str(min(model_props.top_layers,
                                                 model_props.static_layers)) + 'drop')
-    print "Compiling {:} model".format("anaphoricity" if anaphoricity else "pair")
+    print("Compiling {:} model".format("anaphoricity" if anaphoricity else "pair"))
     graph.compile(loss={'out': 'mse'}, optimizer=SGD())
     return graph
 
@@ -105,7 +105,7 @@ def get_model(model_props):
     graph.add_output(name='costs', input='action_scores')
 
     opt = Adam(lr=model_props.learning_rate, beta_1=0.9, beta_2=0.99, epsilon=1e-6)
-    print "Compiling clustering model"
+    print("Compiling clustering model")
     graph.compile(loss={'costs': risk if model_props.risk_objective else max_margin}, optimizer=opt)
     return graph, opt
 
@@ -119,7 +119,7 @@ def get_models(model_props):
     if pair_static is not None:
         pair_static.set_weights(static_pair)
         anaphoricity_static.set_weights(static_ana)
-    print [w.shape for w in dynamic_pair]
+    print([w.shape for w in dynamic_pair])
     if not model_props.randomize_weights:
         clusterer.set_weights(dynamic_ana + dynamic_pair)
     return pair_static, anaphoricity_static, clusterer, word_vectors

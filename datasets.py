@@ -36,8 +36,8 @@ class DatasetColumn:
         if self.active:
             self.data = np.array(self.data, dtype='bool') \
                 if self.name == 'y' or self.name == 'pf' else np.vstack(self.data)
-            print "Writing {:}, dtype={:}, size={:}".format(self.name, str(self.data.dtype),
-                                                            utils.sizeof_fmt(self.data.nbytes))
+            print("Writing {:}, dtype={:}, size={:}".format(self.name, str(self.data.dtype),
+                                                            utils.sizeof_fmt(self.data.nbytes)))
             np.save(path + self.name, self.data)
 
 
@@ -285,7 +285,7 @@ class DocumentBatchedDataset:
         if self.model_props.use_spans:
             self.spans = np.load(mentions_path + 'msp.npy')
             if not model_props.use_doc_embedding:
-                print -self.spans.shape[1] / 5
+                print(-self.spans.shape[1] / 5)
                 self.spans[:, -self.spans.shape[1] / 5:] = 0
 
         self.mention_features = np.load(mentions_path + 'mf.npy')
@@ -336,7 +336,7 @@ class DocumentBatchedDataset:
                 mentions = np.arange(ms, ms + max_anaphor)
                 antecedents = np.arange(max_anaphor - 1)
                 anaphors = np.arange(min_anaphor, max_anaphor)
-                pairs = np.arange(ps + min_pair, ps + max_pair)
+                pairs = np.arange(ps + min_pair, ps + max_pair, dtype=int)
                 pair_antecedents = np.concatenate([np.arange(ana)
                                                    for ana in range(min_anaphor, max_anaphor)])
                 pair_anaphors = np.concatenate([(ana - min_anaphor) *

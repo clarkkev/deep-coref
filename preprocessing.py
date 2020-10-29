@@ -16,7 +16,7 @@ def write_words():
     words = Counter()
     for dataset_name in ["train", "dev", "test"]:
         inc = 1 if dataset_name == "train" else 0
-        print "Adding words from", dataset_name
+        print("Adding words from", dataset_name)
         for d in docs(dataset_name):
             for mention in d["mentions"].values():
                 for w in mention["sentence"]:
@@ -28,7 +28,7 @@ def write_words():
 def write_document_vectors():
     vectors = word_vectors.WordVectors(load=True)
     for dataset_name in ["train", "dev", "test"]:
-        print "Building document vectors for", dataset_name
+        print("Building document vectors for", dataset_name)
         doc_vectors = {}
         for d in docs(dataset_name):
             sentences = {}
@@ -52,19 +52,25 @@ def write_document_vectors():
 def write_genres():
     sources = set()
     for dataset_name in ["train"]:
-        print "Adding sources from", dataset_name
+        print("Adding sources from", dataset_name)
         for d in docs(dataset_name):
             sources.add(d["document_features"]["source"])
-    print sources
+    print(sources)
     utils.write_pickle({source: i for i, source in enumerate(sorted(sources))},
                       directories.MISC + 'genres.pkl')
 
 
 def write_feature_names():
-    utils.write_pickle({f: i for i, f in enumerate(next(
-        utils.load_json_lines(directories.RAW + 'train'))["pair_feature_names"])},
-                      directories.MISC + 'pair_feature_names.pkl')
-
+    raw_train = directories.RAW + 'train'
+    try:
+        utils.write_pickle({f: i for i, f in enumerate(next(
+            utils.load_json_lines(raw_train))["pair_feature_names"])},
+                           directories.MISC + 'pair_feature_names.pkl')
+    except FileNotFoundError as e:
+        if e.filename == raw_train:
+            raise FileNotFoundError('Raw training data not found.  Perhaps you need to copy the original dataset first: %s' % e.filename) from e
+        else:
+            raise
 
 def main():
     write_feature_names()

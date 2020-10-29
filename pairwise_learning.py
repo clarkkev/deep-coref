@@ -82,7 +82,7 @@ class RankingMetricsTracker:
                 self.name + " FL": self.FL,
                 self.name + " WL": self.WL,
         })
-        print printout
+        print(printout)
 
 
 class ClassificationMetricsTracker:
@@ -117,14 +117,14 @@ class ClassificationMetricsTracker:
             self.name + " best_threshold": best_f1_threshold
         }
         result.update({self.name + " " + k: v for k, v in metrics[0.5]
-                      .iteritems()})
+                      .items()})
         result.update({self.name + " best_" + k: v for k, v in
-                       metrics[best_f1_threshold].iteritems()})
+                       metrics[best_f1_threshold].items()})
         result[self.name + " best_accuracy"] = best_accuracy
 
         stats.update(result)
-        print "{:} - loss: {:.4f} - auc: {:.4f} - f1: {:.4f} (thresh={:.2f})".format(
-                self.name, loss, auc, metrics[best_f1_threshold]['f1'], best_f1_threshold)
+        print("{:} - loss: {:.4f} - auc: {:.4f} - f1: {:.4f} (thresh={:.2f})".format(
+                self.name, loss, auc, metrics[best_f1_threshold]['f1'], best_f1_threshold))
 
     def get_metrics(self, thresh):
         pred = np.clip(np.floor(self.y_pred / thresh), 0, 1)
@@ -178,8 +178,8 @@ def compute_metrics(docs, prefix):
     muc, b3, ceafe, lea = \
         results[prefix + ' muc'], results[prefix + ' b3'], results[prefix + ' ceafe'], results[prefix + ' lea']
     conll = (muc + b3 + ceafe) / 3
-    print "{:} - MUC: {:0.2f} - B3: {:0.2f} - CEAFE: {:0.2f} - LEA {:0.2f} - CoNLL {:0.2f}".format(
-        prefix, 100 * muc, 100 * b3, 100 * ceafe, 100 * lea, 100 * conll)
+    print("{:} - MUC: {:0.2f} - B3: {:0.2f} - CEAFE: {:0.2f} - LEA {:0.2f} - CoNLL {:0.2f}".format(
+        prefix, 100 * muc, 100 * b3, 100 * ceafe, 100 * lea, 100 * conll))
     results[prefix + ' conll'] = conll
     return results
 
@@ -214,16 +214,16 @@ def test(model_props=None, model_name=None, weights_file='best_weights', dataset
                                                            load_weights_from=model_name,
                                                            weights_file=weights_file)
 
-    print "Loading data"
+    print("Loading data")
     vectors = np.load(directories.RELEVANT_VECTORS + 'word_vectors.npy')
     dataset = datasets.DocumentBatchedDataset(dataset_name, model_props, with_ids=True)
     docs = utils.load_pickle(directories.DOCUMENTS + dataset_name + '_docs.pkl')
     stats = {}
 
-    print "Building model"
+    print("Building model")
     model, _ = pairwise_models.get_model(dataset, vectors, model_props)
 
-    print "Evaluating model on", dataset_name
+    print("Evaluating model on", dataset_name)
     evaluate_model(dataset, docs, model, model_props, stats,
                    save_output=save_output, save_scores=save_scores)
     timer.clear()
@@ -257,10 +257,10 @@ def evaluate_model(dataset, docs, model, model_props, stats, save_output=False, 
         prog.update(i + 1, exact=progress)
 
     if save_scores:
-        print "Writing scores"
+        print("Writing scores")
         utils.write_pickle(saved_scores, model_props.path + dataset.name + '_scores.pkl')
     if save_output:
-        print "Writing output"
+        print("Writing output")
         utils.write_pickle(saved_links, model_props.path + dataset.name + '_links.pkl')
         utils.write_pickle(docs, model_props.path + dataset.name + '_processed_docs.pkl')
 
@@ -276,7 +276,7 @@ def evaluate_model(dataset, docs, model, model_props, stats, save_output=False, 
     timer.stop("metrics")
 
     if print_table:
-        print " & ".join(map(lambda x: "{:.2f}".format(x * 100), [
+        print(" & ".join(map(lambda x: "{:.2f}".format(x * 100), [
             stats[dataset.name + " muc precision"],
             stats[dataset.name + " muc recall"],
             stats[dataset.name + " muc"],
@@ -287,11 +287,11 @@ def evaluate_model(dataset, docs, model, model_props, stats, save_output=False, 
             stats[dataset.name + " ceafe recall"],
             stats[dataset.name + " ceafe"],
             stats[dataset.name + " conll"],
-        ]))
+        ])))
 
 
 def train(model_props, n_epochs=10000, reduced=False, dev_set_name='dev'):
-    print "Training", model_props.path
+    print("Training", model_props.path)
     pprint(model_props.__dict__)
 
     model_props.write(model_props.path + 'model_props.pkl')
@@ -307,14 +307,14 @@ def train(model_props, n_epochs=10000, reduced=False, dev_set_name='dev'):
         write_start = 80
         write_every = 20
 
-    print "Loading data"
+    print("Loading data")
     vectors = np.load(directories.RELEVANT_VECTORS + 'word_vectors.npy')
     train = datasets.DocumentBatchedDataset("train_reduced" if reduced else "train",
                                             model_props, with_ids=True)
     dev = datasets.DocumentBatchedDataset(dev_set_name + "_reduced" if reduced else dev_set_name,
                                           model_props, with_ids=True)
 
-    print "Building model"
+    print("Building model")
     model, _ = pairwise_models.get_model(dev, vectors, model_props)
     json_string = model.to_json()
     open(model_props.path + 'architecture.json', 'w').write(json_string)
@@ -324,7 +324,7 @@ def train(model_props, n_epochs=10000, reduced=False, dev_set_name='dev'):
     history = []
     for epoch in range(n_epochs):
         timer.start("train")
-        print "EPOCH {:}, model = {:}".format((epoch + 1), model_props.path)
+        print("EPOCH {:}, model = {:}".format((epoch + 1), model_props.path))
 
         epoch_stats = {}
         model_weights = model.get_weights()
@@ -334,14 +334,14 @@ def train(model_props, n_epochs=10000, reduced=False, dev_set_name='dev'):
             dev_docs = dev_docs[:3]
 
         if model_props.ranking:
-            print "Running over training set"
+            print("Running over training set")
             run_model_over_docs(train, train_docs, model)
             epoch_stats.update(compute_metrics(train_docs, "train"))
             if model_props.use_rewards:
-                print "Setting costs"
+                print("Setting costs")
                 set_costs(train, train_docs)
 
-        print "Training"
+        print("Training")
         prog = utils.Progbar(train.n_batches)
         train.shuffle()
         loss_sum, n_examples = 0, 0
@@ -362,7 +362,7 @@ def train(model_props, n_epochs=10000, reduced=False, dev_set_name='dev'):
         summed = np.sum(map(np.array, epoch_stats["weight diffs"][1:]), axis=0)
         epoch_stats["total weight diff"] = tuple(summed)
 
-        print "Testing on dev set"
+        print("Testing on dev set")
         evaluate_model(dev, dev_docs, model, model_props, epoch_stats)
 
         history.append(epoch_stats)
@@ -372,15 +372,15 @@ def train(model_props, n_epochs=10000, reduced=False, dev_set_name='dev'):
              epoch_stats["dev anaphoricity loss"])
         if score < best_val_score:
             best_val_score = score
-            print "New best {:}, saving model".format(
-                "CoNLL F1" if model_props.ranking else "validation loss")
+            print("New best {:}, saving model".format(
+                "CoNLL F1" if model_props.ranking else "validation loss"))
             model.save_weights(model_props.path + "best_weights.hdf5", overwrite=True)
         if score < best_val_score_in_window and epoch > write_start:
-            print "Best in last {:}, saved to weights_{:}".format(
-                write_every, write_every * (epoch / write_every))
+            print("Best in last {:}, saved to weights_{:}".format(
+                write_every, write_every * int(epoch / write_every)))
             best_val_score_in_window = score
             model.save_weights(model_props.path + "weights_{:}.hdf5".format(
-                write_every * (epoch / write_every)), overwrite=True)
+                write_every * int(epoch / write_every)), overwrite=True)
             if epoch + write_every >= n_epochs:
                 model.save_weights(model_props.path + "final_weights.hdf5", overwrite=True)
         if epoch % write_every == 0:
@@ -388,7 +388,7 @@ def train(model_props, n_epochs=10000, reduced=False, dev_set_name='dev'):
 
         timer.stop("train")
         timer.print_totals()
-        print
+        print()
 
     timer.clear()
 

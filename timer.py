@@ -18,7 +18,7 @@ def stop(key):
 
 
 def print_totals():
-    print "Times:", ", ".join(["{:}: {:.1f}".format(key, totals[key]) for key in totals])
+    print("Times:", ", ".join(["{:}: {:.1f}".format(key, totals[key]) for key in totals]))
 
 
 def total_time(key):

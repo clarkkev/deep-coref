@@ -117,10 +117,10 @@ def write_probable_pairs(dataset_name, action_space_path, scores):
         margin_removals -= len(probable_pairs[did])
         total_size += len(probable_pairs[did])
 
-    print "num docs:", len(scores)
-    print "avg size without filter: {:.1f}".format(total_pairs / float(len(scores)))
-    print "avg size: {:.1f}".format(total_size / float(len(scores)))
-    print "margin removals size: {:.1f}".format(margin_removals / float(len(scores)))
+    print("num docs:", len(scores))
+    print("avg size without filter: {:.1f}".format(total_pairs / float(len(scores))))
+    print("avg size: {:.1f}".format(total_size / float(len(scores))))
+    print("margin removals size: {:.1f}".format(margin_removals / float(len(scores))))
     utils.write_pickle(probable_pairs, action_space_path + dataset_name + '_probable_pairs.pkl')
     shutil.copyfile('clustering_preprocessing.py',
                     action_space_path + 'clustering_preprocessing.py')
@@ -128,7 +128,7 @@ def write_probable_pairs(dataset_name, action_space_path, scores):
 
 def write_action_spaces(dataset_name, action_space_path, model_path, ltr=False):
     output_file = action_space_path + dataset_name + "_action_space.pkl"
-    print "Writing candidate actions to " + output_file
+    print("Writing candidate actions to " + output_file)
     scores = utils.load_pickle(model_path + dataset_name + "_scores.pkl")
     write_probable_pairs(dataset_name, action_space_path, scores)
     probable_pairs = utils.load_pickle(action_space_path + dataset_name + '_probable_pairs.pkl')
@@ -141,12 +141,14 @@ def write_action_spaces(dataset_name, action_space_path, model_path, ltr=False):
             for (m1, m2) in probable_pairs[did]:
                 actions[m2].append(m1)
             if ltr:
-                actions = sorted(actions.items(), cmp=lambda (ana1, ants1), (ana2, ants2):
-                                 -1 if (ana1, ana2) in scores[did] else 1)
+                x = (ana1, ants1)
+                y = (ana2, ants2)
+                actions = sorted(actions.items(), key=functools.cmp_to_key(lambda x, y:
+                                 -1 if (ana1, ana2) in scores[did] else 1))
                 for i in range(len(actions) - 1):
                     assert (actions[i][0], actions[i + 1][0]) in scores[did]
             else:
-                actions = sorted(actions.items(), key=lambda (ana, ants):
+                actions = sorted(actions.items(), key=lambda ana, ants:
                                  max(scores[did][(ant, ana)] - scores[did][(-1, ana)]
                                      for ant in ants))
             possible_pairs = get_possible_pairs(probable_pairs[did])
